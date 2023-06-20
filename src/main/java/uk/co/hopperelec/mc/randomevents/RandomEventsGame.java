@@ -184,7 +184,7 @@ public class RandomEventsGame {
     private <T> T getRandomFrom(@NotNull T @NotNull [] array, @NotNull Random random) {
         return array[random.nextInt(array.length)];
     }
-    private <T> T getRandomWhich(T[] array, @NotNull Predicate<T> which, Random random) {
+    private <T> T getRandomWhich(T[] array, @NotNull Predicate<T> which, @NotNull Random random) {
         while (true) {
             final T option = getRandomFrom(array, random);
             if (which.test(option)) {
