@@ -25,14 +25,12 @@ public class TimeInSeconds {
     public void set(int signedTime) {
         unsignedTime = (short)(signedTime-Short.MAX_VALUE);
     }
-    public void set(TimeInSeconds newValue) {
+    public void set(@NotNull TimeInSeconds newValue) {
         unsignedTime = newValue.unsignedTime;
     }
-
     public double dividedBy(@NotNull TimeInSeconds operand) {
         return asDouble()/operand.asDouble();
     }
-
     public boolean moreThan(@NotNull TimeInSeconds operand) {
         return unsignedTime > operand.unsignedTime;
     }
