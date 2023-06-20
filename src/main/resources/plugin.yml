@@ -1,0 +1,11 @@
+name: RandomEvents
+version: ${project.version}
+main: uk.co.hopperelec.mc.randomevents.RandomEventsPlugin
+api-version: 1.19
+prefix: RandomEvents
+author: hopperelec
+description: ${project.description}
+website: ${project.url}
+commands:
+  randomevents:
+    description: Core command for RandomEvents
