@@ -120,8 +120,8 @@ public class RandomEventsGame {
             case ITEM -> {
                 final Material material = getRandomWhich(Material.values(), Material::isItem, eventRandomizer);
                 final ItemStack itemStack = new ItemStack(material);
-                if (itemStack.getItemMeta() instanceof Damageable) {
-                    ((Damageable)itemStack.getItemMeta()).setHealth(eventRandomizer.nextInt(material.getMaxDurability())+1);
+                if (itemStack.getItemMeta() instanceof Damageable damageable) {
+                    damageable.setHealth(eventRandomizer.nextInt(material.getMaxDurability())+1);
                 }
                 randomEvent.player.getInventory().addItem(itemStack);
                 randomEvent.player.sendMessage("Given you "+material);
