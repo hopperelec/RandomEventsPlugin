@@ -204,7 +204,11 @@ public class RandomEventsGame {
         final List<ItemStack> newDroppedItems = new ArrayList<>();
         newDroppedItems.add(new ItemStack(getNewDropFor(seed)));
         if (inventoryHolder != null) {
-            newDroppedItems.addAll(List.of(inventoryHolder.getInventory().getContents()));
+            for (ItemStack itemStack : inventoryHolder.getInventory().getContents()) {
+                if (itemStack != null) {
+                    newDroppedItems.add(itemStack);
+                }
+            }
         }
         return newDroppedItems;
     }
