@@ -22,9 +22,7 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static net.kyori.adventure.text.format.NamedTextColor.*;
@@ -41,6 +39,7 @@ public class RandomEventsGame {
     public long lootSeed = new Random().nextLong();
     public final static short TELEPORT_SEARCH_RADIUS = 32;
     public final static TextComponent LORE_PREFIX = Component.text("Drops: ", YELLOW, BOLD).decoration(ITALIC, false);
+    private final Map<LivingEntity,PotionEffectType> lastPotionEffects = new HashMap<>();
 
     public RandomEventsGame(RandomEventsPlugin plugin) {
         this.plugin = plugin;
@@ -69,14 +68,9 @@ public class RandomEventsGame {
         clearEffects();
     }
 
-    public void clearEffectsFrom(@NotNull LivingEntity entity) {
-        for (PotionEffect effect : entity.getActivePotionEffects()){
-            entity.removePotionEffect(effect.getType());
-        }
-    }
     public void clearEffects() {
-        for (Player player : bossBar.getPlayers()) {
-            clearEffectsFrom(player);
+        for (LivingEntity entity : lastPotionEffects.keySet()) {
+            entity.removePotionEffect(lastPotionEffects.remove(entity));
         }
     }
 
@@ -145,6 +139,7 @@ public class RandomEventsGame {
                 final int amplifier = eventRandomizer.nextInt(5)+1;
                 final PotionEffect potionEffect = new PotionEffect(potionEffectType, delay.asInt()*20, amplifier);
                 randomEvent.player.addPotionEffect(potionEffect);
+                lastPotionEffects.put(randomEvent.player, potionEffectType);
                 randomEvent.player.sendMessage("Effected you with "+potionEffectType.getName()+" "+amplifier);
             }
         }
@@ -326,7 +321,6 @@ public class RandomEventsGame {
 
     public void joinPlayer(@NotNull Player player) {
         bossBar.addPlayer(player);
-        clearEffectsFrom(player);
         handleLoreFor(player);
     }
 
