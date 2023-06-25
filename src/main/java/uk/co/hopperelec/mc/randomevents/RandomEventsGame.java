@@ -9,7 +9,10 @@ import org.bukkit.block.BlockState;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Damageable;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -28,20 +31,21 @@ import java.util.function.Predicate;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 import static net.kyori.adventure.text.format.TextDecoration.BOLD;
 import static net.kyori.adventure.text.format.TextDecoration.ITALIC;
+import static uk.co.hopperelec.mc.randomevents.RandomEventsPlayer.getRandomEventsPlayer;
 
 public class RandomEventsGame {
     private int bossBarTaskId = -1;
-    private final RandomEventsPlugin plugin;
-    private final BossBar bossBar = Bukkit.createBossBar("Next event:", BarColor.YELLOW, BarStyle.SOLID);
-    private final TimeInSeconds countdown = new TimeInSeconds();
-    private final TimeInSeconds delay = new TimeInSeconds();
-    private final Random eventRandomizer = new Random();
+    @NotNull private final RandomEventsPlugin plugin;
+    @NotNull private final BossBar bossBar = Bukkit.createBossBar("Next event:", BarColor.YELLOW, BarStyle.SOLID);
+    @NotNull private final TimeInSeconds countdown = new TimeInSeconds();
+    @NotNull private final TimeInSeconds delay = new TimeInSeconds();
+    @NotNull private final Random eventRandomizer = new Random();
     public long lootSeed = new Random().nextLong();
     public final static short TELEPORT_SEARCH_RADIUS = 32;
-    public final static TextComponent LORE_PREFIX = Component.text("Drops: ", YELLOW, BOLD).decoration(ITALIC, false);
-    private final Map<LivingEntity,PotionEffectType> lastPotionEffects = new HashMap<>();
+    @NotNull public final static TextComponent LORE_PREFIX = Component.text("Drops: ", YELLOW, BOLD).decoration(ITALIC, false);
+    @NotNull private final static Set<RandomEventsPlayer> players = new HashSet<>();
 
-    public RandomEventsGame(RandomEventsPlugin plugin) {
+    public RandomEventsGame(@NotNull RandomEventsPlugin plugin) {
         this.plugin = plugin;
         bossBar.setVisible(false);
     }
@@ -65,12 +69,12 @@ public class RandomEventsGame {
         plugin.getServer().getScheduler().cancelTask(bossBarTaskId);
         bossBarTaskId = -1;
         removeLoreFromPlayers();
-        clearEffects();
+        clearPotionEffects();
     }
 
-    public void clearEffects() {
-        for (LivingEntity entity : lastPotionEffects.keySet()) {
-            entity.removePotionEffect(lastPotionEffects.remove(entity));
+    public void clearPotionEffects() {
+        for (RandomEventsPlayer player : players) {
+            player.clearPotionEffect();
         }
     }
 
@@ -85,19 +89,25 @@ public class RandomEventsGame {
     }
 
     public void doRandomEvent() {
-        for (Player player : bossBar.getPlayers()) {
+        for (RandomEventsPlayer player : players) {
             doRandomEvent(player);
         }
     }
     public void doRandomEvent(@NotNull RandomEventType randomEventType) {
-        for (Player player : bossBar.getPlayers()) {
+        for (RandomEventsPlayer player : players) {
             doRandomEvent(player, randomEventType);
         }
     }
-    public void doRandomEvent(@NotNull HumanEntity player) {
+    public void doRandomEvent(@NotNull Player player) {
+        doRandomEvent(getRandomEventsPlayer(player));
+    }
+    public void doRandomEvent(@NotNull RandomEventsPlayer player) {
         doRandomEvent(player, getRandomFrom(RandomEventType.values(), eventRandomizer));
     }
-    public void doRandomEvent(@NotNull HumanEntity player, @NotNull RandomEventType randomEventType) {
+    public void doRandomEvent(@NotNull Player player, @NotNull RandomEventType randomEventType) {
+        doRandomEvent(getRandomEventsPlayer(player), randomEventType);
+    }
+    public void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull RandomEventType randomEventType) {
         final RandomEvent randomEvent = new RandomEvent(this, player, randomEventType);
         randomEvent.callEvent();
         if (!randomEvent.isCancelled()) {
@@ -108,7 +118,7 @@ public class RandomEventsGame {
         switch (randomEvent.type) {
             case BLOCK -> {
                 final Material material = getRandomWhich(Material.values(), Material::isBlock, eventRandomizer);
-                randomEvent.player.getLocation().getBlock().setType(material);
+                randomEvent.player.setBlock(material);
                 randomEvent.player.sendMessage("Placed a "+material);
             }
             case ITEM -> {
@@ -118,16 +128,16 @@ public class RandomEventsGame {
                     damageable.setHealth(eventRandomizer.nextInt(material.getMaxDurability())+1);
                 }
                 addLoreTo(itemStack);
-                randomEvent.player.getInventory().addItem(itemStack);
+                randomEvent.player.giveItem(itemStack);
                 randomEvent.player.sendMessage("Given you "+material);
             }
             case ENTITY -> {
                 final EntityType entityType = getRandomWhich(EntityType.values(), e -> e.isSpawnable() && e.isEnabledByFeature(randomEvent.player.getWorld()), eventRandomizer);
-                randomEvent.player.getWorld().spawnEntity(randomEvent.player.getLocation(), entityType);
+                randomEvent.player.spawnEntity(entityType);
                 randomEvent.player.sendMessage("Spawned a "+entityType);
             }
             case TELEPORT -> {
-                final Location location = getRandomSafeLocationNear(randomEvent.player);
+                final Location location = getRandomSafeLocationNear(randomEvent.player.getLocation());
                 if (location == null) {
                     randomEvent.player.sendMessage("Tried to teleport you, but couldn't find a suitable location close enough!");
                 } else {
@@ -139,29 +149,27 @@ public class RandomEventsGame {
                 final PotionEffectType potionEffectType = getRandomFrom(PotionEffectType.values(), eventRandomizer);
                 final int amplifier = eventRandomizer.nextInt(5)+1;
                 final PotionEffect potionEffect = new PotionEffect(potionEffectType, delay.asInt()*20, amplifier);
-                randomEvent.player.addPotionEffect(potionEffect);
-                lastPotionEffects.put(randomEvent.player, potionEffectType);
+                randomEvent.player.setPotionEffect(potionEffect);
                 randomEvent.player.sendMessage("Effected you with "+potionEffectType.getName()+" "+amplifier);
             }
         }
     }
 
-    public Location getRandomSafeLocationNear(@NotNull Entity entity) {
-        final Location centerLoc = entity.getLocation().toBlockLocation();
-        final int minX = centerLoc.getBlockX()-TELEPORT_SEARCH_RADIUS;
-        final int maxX = centerLoc.getBlockX()+TELEPORT_SEARCH_RADIUS;
-        final int minZ = centerLoc.getBlockZ()-TELEPORT_SEARCH_RADIUS;
-        final int maxZ = centerLoc.getBlockZ()+TELEPORT_SEARCH_RADIUS;
-        final int minY = entity.getWorld().getMinHeight();
+    public Location getRandomSafeLocationNear(@NotNull Location location) {
+        final int minX = location.getBlockX()-TELEPORT_SEARCH_RADIUS;
+        final int maxX = location.getBlockX()+TELEPORT_SEARCH_RADIUS;
+        final int minZ = location.getBlockZ()-TELEPORT_SEARCH_RADIUS;
+        final int maxZ = location.getBlockZ()+TELEPORT_SEARCH_RADIUS;
+        final int minY = location.getWorld().getMinHeight();
         final List<Vector> safeLocations = new ArrayList<>();
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                final int maxY = entity.getWorld().getHighestBlockYAt(x, z);
+                final int maxY = location.getWorld().getHighestBlockYAt(x, z);
                 if (maxY != minY-1) {
                     safeLocations.add(new Vector(x, maxY+1, z));
                     int y = minY;
                     while (y < maxY) {
-                        if (!centerLoc.getWorld().getBlockAt(x, y, z).isSolid() && centerLoc.getWorld().getBlockAt(x, y-1, z).isSolid()) {
+                        if (!location.getWorld().getBlockAt(x, y, z).isSolid() && location.getWorld().getBlockAt(x, y-1, z).isSolid()) {
                             safeLocations.add(new Vector(x, y, z));
                             y++;
                         }
@@ -172,7 +180,7 @@ public class RandomEventsGame {
         }
         if (safeLocations.size() != 0) {
             final Vector safeLocation = safeLocations.get(eventRandomizer.nextInt(safeLocations.size()));
-            return centerLoc.set(safeLocation.getX(), safeLocation.getY(), safeLocation.getZ());
+            return location.set(safeLocation.getX(), safeLocation.getY(), safeLocation.getZ());
         }
         return null;
     }
@@ -284,7 +292,7 @@ public class RandomEventsGame {
         removeLoreFrom(inventoryHolder.getInventory());
     }
     public void removeLoreFromPlayers() {
-        for (Player player : bossBar.getPlayers()) {
+        for (RandomEventsPlayer player : players) {
             removeLoreFrom(player);
         }
     }
@@ -316,16 +324,30 @@ public class RandomEventsGame {
         return bossBarTaskId != -1;
     }
 
-    public boolean containsPlayer(@NotNull Player player) {
-        return bossBar.getPlayers().contains(player);
+    public boolean hasPlayer(@NotNull Player player) {
+        return hasPlayer(getRandomEventsPlayer(player));
+    }
+    public boolean hasPlayer(@NotNull RandomEventsPlayer player) {
+        return players.contains(player);
+    }
+
+    public @NotNull Set<RandomEventsPlayer> getPlayers() {
+        return players;
     }
 
     public void joinPlayer(@NotNull Player player) {
         bossBar.addPlayer(player);
+        players.add(getRandomEventsPlayer(player));
         handleLoreFor(player);
     }
 
-    public TimeInSeconds getDelay() {
+    public void removePlayer(@NotNull Player player) {
+        bossBar.removePlayer(player);
+        players.remove(getRandomEventsPlayer(player));
+        removeLoreFrom(player);
+    }
+
+    public @NotNull TimeInSeconds getDelay() {
         return delay;
     }
     public void setDelay(@NotNull TimeInSeconds newDelay) {
@@ -335,7 +357,7 @@ public class RandomEventsGame {
         }
     }
 
-    public TimeInSeconds getCountdown() {
+    public @NotNull TimeInSeconds getCountdown() {
         return countdown;
     }
     public void setCountdown(@NotNull TimeInSeconds newCountdown) {

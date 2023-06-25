@@ -1,6 +1,5 @@
 package uk.co.hopperelec.mc.randomevents;
 
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -10,10 +9,10 @@ public class RandomEvent extends Event implements Cancellable {
     @NotNull private static final HandlerList HANDLER_LIST = new HandlerList();
     private boolean cancelled = false;
     public final RandomEventsGame game;
-    @NotNull public final HumanEntity player;
+    @NotNull public final RandomEventsPlayer player;
     @NotNull public RandomEventType type;
 
-    public RandomEvent(RandomEventsGame game, @NotNull HumanEntity player, @NotNull RandomEventType type) {
+    public RandomEvent(RandomEventsGame game, @NotNull RandomEventsPlayer player, @NotNull RandomEventType type) {
         this.game = game;
         this.player = player;
         this.type = type;

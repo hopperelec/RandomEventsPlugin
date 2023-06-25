@@ -22,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-@SuppressWarnings("unused")
 public class RandomEventsPlugin extends JavaPlugin implements Listener {
     private final RandomEventsGame game = new RandomEventsGame(this);
     private boolean processingEvent = false;
@@ -57,7 +56,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     }
 
     private boolean isInOngoingGame(@NotNull HumanEntity player) {
-        return game.isOngoing() && game.containsPlayer((Player) player);
+        return game.isOngoing() && game.hasPlayer((Player) player);
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
