@@ -117,6 +117,7 @@ public class RandomEventsGame {
                 if (itemStack.getItemMeta() instanceof Damageable damageable) {
                     damageable.setHealth(eventRandomizer.nextInt(material.getMaxDurability())+1);
                 }
+                addLoreTo(itemStack);
                 randomEvent.player.getInventory().addItem(itemStack);
                 randomEvent.player.sendMessage("Given you "+material);
             }
