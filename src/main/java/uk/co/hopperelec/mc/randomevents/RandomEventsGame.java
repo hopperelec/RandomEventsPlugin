@@ -264,7 +264,7 @@ public class RandomEventsGame {
         addLoreTo(inventoryHolder.getInventory());
     }
     public void addLoreToPlayers() {
-        for (Player player : bossBar.getPlayers()) {
+        for (RandomEventsPlayer player : players) {
             addLoreTo(player);
         }
     }
