@@ -75,12 +75,6 @@ public class RandomEventsGame {
         clearPotionEffects();
     }
 
-    public void clearPotionEffects() {
-        for (RandomEventsPlayer player : players) {
-            player.clearPotionEffect();
-        }
-    }
-
     public void progressCountdown() {
         if (countdown.asInt() <= 1) {
             countdown.set(delay);
@@ -90,6 +84,7 @@ public class RandomEventsGame {
         }
         bossBar.setProgress(countdown.dividedBy(delay));
     }
+
 
     public void doRandomEvent() {
         for (RandomEventsPlayer player : players) {
@@ -158,7 +153,7 @@ public class RandomEventsGame {
         }
     }
 
-    public Location getRandomSafeLocationNear(@NotNull Location location) {
+    public @Nullable Location getRandomSafeLocationNear(@NotNull Location location) {
         final int minX = location.getBlockX()-TELEPORT_SEARCH_RADIUS;
         final int maxX = location.getBlockX()+TELEPORT_SEARCH_RADIUS;
         final int minZ = location.getBlockZ()-TELEPORT_SEARCH_RADIUS;
@@ -188,6 +183,7 @@ public class RandomEventsGame {
         return null;
     }
 
+
     private <T> T getRandomFrom(@NotNull T @NotNull [] array, @NotNull Random random) {
         return array[random.nextInt(array.length)];
     }
@@ -199,6 +195,7 @@ public class RandomEventsGame {
             }
         }
     }
+
 
     private Material getNewDropFor(@NotNull Object seed) {
         return getRandomWhich(Material.values(), Material::isItem, new Random(lootSeed + seed.hashCode()));
@@ -222,7 +219,7 @@ public class RandomEventsGame {
         return getNewDropsFor(entity.getType(), entity instanceof InventoryHolder ? (InventoryHolder) entity : null);
     }
 
-    public Component getDropsTextFor(@NotNull List<ItemStack> newDroppedItems) {
+    public @NotNull Component getDropsTextFor(@NotNull List<ItemStack> newDroppedItems) {
         Component loreToAdd = LORE_PREFIX.append(Component.translatable(newDroppedItems.remove(0).translationKey(), BLUE).decoration(BOLD, false));
         for (ItemStack newDroppedItem : newDroppedItems) {
             loreToAdd = loreToAdd.append(Component.text(", ", DARK_GRAY));
@@ -233,12 +230,12 @@ public class RandomEventsGame {
         }
         return loreToAdd;
     }
-    public Component getDropsTextFor(@NotNull Object seed) {
+    public @NotNull Component getDropsTextFor(@NotNull Object seed) {
         if (isLearned(seed)) return getDropsTextFor(getNewDropsFor(seed, null));
         return UNKNOWN_DROP_TEXT;
     }
 
-    public Object getSeedFor(@Nullable ItemStack itemStack) {
+    public @Nullable Object getSeedFor(@Nullable ItemStack itemStack) {
         if (itemStack == null || itemStack.getType() == Material.AIR) {
             return null;
         }
@@ -365,6 +362,7 @@ public class RandomEventsGame {
         }
     }
 
+
     public boolean isLearned(@NotNull Object seed) {
         return learnedDropSeeds.contains(seed);
     }
@@ -395,8 +393,11 @@ public class RandomEventsGame {
         if (isOngoing()) resetLore();
     }
 
-    public boolean isOngoing() {
-        return bossBarTaskId != -1;
+
+    public void clearPotionEffects() {
+        for (RandomEventsPlayer player : players) {
+            player.clearPotionEffect();
+        }
     }
 
     public boolean hasPlayer(@NotNull Player player) {
@@ -420,6 +421,10 @@ public class RandomEventsGame {
         bossBar.removePlayer(player);
         players.remove(getRandomEventsPlayer(player));
         removeLoreFrom(player);
+    }
+
+    public boolean isOngoing() {
+        return bossBarTaskId != -1;
     }
 
     public @NotNull TimeInSeconds getDelay() {

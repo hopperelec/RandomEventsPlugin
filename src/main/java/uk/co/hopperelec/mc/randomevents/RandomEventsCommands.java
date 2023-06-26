@@ -7,6 +7,7 @@ import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @CommandAlias("randomevents")
 @Description("Core command for RandomEvents")
@@ -43,7 +44,7 @@ public class RandomEventsCommands extends BaseCommand {
         }
     }
 
-    private Object getSeedFromName(CommandSender sender, String name) {
+    private @Nullable Object getSeedFromName(CommandSender sender, String name) {
         name = name.toUpperCase();
         final Material material = Material.getMaterial(name);
         if (material != null) {
