@@ -43,24 +43,60 @@ public class RandomEventsCommands extends BaseCommand {
         }
     }
 
+    private Object getSeedFromName(CommandSender sender, String name) {
+        name = name.toUpperCase();
+        final Material material = Material.getMaterial(name);
+        if (material != null) {
+            if (material.isBlock()) {
+                return material;
+            }
+            sender.sendMessage("Given material is not a block");
+        } else {
+            try {
+                return EntityType.valueOf(name);
+            } catch (IllegalArgumentException e) {
+                sender.sendMessage("Could not find a material or entity by the given name");
+            }
+        }
+        return null;
+    }
+
     @Subcommand("listdrops")
     @CommandAlias("randomevents drops")
     @Description("Lists the drops of the given block or entity name")
     public void onListDrops(@NotNull RandomEventsGame game, CommandSender sender, @Name("name") String name) {
-        name = name.toUpperCase();
-        Object seed = Material.getMaterial(name);
-        if (seed == null) {
-            try {
-                seed = EntityType.valueOf(name);
-            } catch (IllegalArgumentException e) {
-                sender.sendMessage("Could not find a material or entity by the given name");
-                return;
-            }
-        } else if (!((Material) seed).isBlock()) {
-            sender.sendMessage("Given material is not a block");
-            return;
+        final Object seed = getSeedFromName(sender, name);
+        if (seed != null)
+            sender.sendMessage(game.getDropsTextFor(seed));
+    }
+
+    @Subcommand("learn")
+    @Description("Learn the drops of the given block or entity name to deobfuscate them in the drops list")
+    public void onLearn(@NotNull RandomEventsGame game, CommandSender sender, @Name("name") String name) {
+        final Object seed = getSeedFromName(sender, name);
+        if (seed != null) {
+            game.learn(seed);
+            sender.sendMessage("Learned!");
         }
-        sender.sendMessage(game.getDropsTextFor(seed));
+    }
+
+    @Subcommand("unlearn")
+    @Description("Unlearn the drops of the given block or entity name to reobfuscate them in the drops list")
+    public void onUnlearn(@NotNull RandomEventsGame game, CommandSender sender, @Name("name") String name) {
+        final Object seed = getSeedFromName(sender, name);
+        if (seed != null) {
+            game.unlearn(seed);
+            sender.sendMessage("Unlearned!");
+        }
+    }
+
+    @Subcommand("set")
+    @Description("Toggle boolean flags")
+    public class RandomEventsToggleCommands extends BaseCommand {
+        @Subcommand("learning")
+        public void onToggleLearning(@NotNull RandomEventsGame game) {
+            game.toggleRequireLearnItems();
+        }
     }
 
     @Subcommand("set")
@@ -69,6 +105,10 @@ public class RandomEventsCommands extends BaseCommand {
         @Subcommand("delay")
         public void onSetDelay(@NotNull RandomEventsGame game, @Name("delay") TimeInSeconds delay) {
             game.setDelay(delay);
+        }
+        @Subcommand("learning")
+        public void onSetLearning(@NotNull RandomEventsGame game, @Name("value") boolean value) {
+            game.setRequireLearnItems(value);
         }
     }
 }

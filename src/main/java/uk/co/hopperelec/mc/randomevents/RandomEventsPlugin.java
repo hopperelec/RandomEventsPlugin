@@ -64,6 +64,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
         if (isInOngoingGame(event.getPlayer()) && event.getPlayer().getGameMode() != GameMode.CREATIVE && !processingEvent) {
             event.setCancelled(true);
             final List<Item> newDroppedItems = dropItems(game.getNewDropsFor(event.getBlockState()), event.getBlock().getLocation());
+            game.learn(event.getBlockState().getType());
             processingEvent = true;
             new BlockDropItemEvent(event.getBlock(), event.getBlockState(), event.getPlayer(), newDroppedItems).callEvent();
             processingEvent = false;
@@ -75,6 +76,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
         if (game.isOngoing()) {
             event.getDrops().clear();
             event.getDrops().addAll(game.getNewDropsFor(event.getEntity()));
+            game.learn(event.getEntity().getType());
         }
     }
 

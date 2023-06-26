@@ -29,8 +29,7 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static net.kyori.adventure.text.format.NamedTextColor.*;
-import static net.kyori.adventure.text.format.TextDecoration.BOLD;
-import static net.kyori.adventure.text.format.TextDecoration.ITALIC;
+import static net.kyori.adventure.text.format.TextDecoration.*;
 import static uk.co.hopperelec.mc.randomevents.RandomEventsPlayer.getRandomEventsPlayer;
 
 public class RandomEventsGame {
@@ -43,7 +42,11 @@ public class RandomEventsGame {
     public long lootSeed = new Random().nextLong();
     public final static short TELEPORT_SEARCH_RADIUS = 32;
     @NotNull public final static TextComponent LORE_PREFIX = Component.text("Drops: ", YELLOW, BOLD).decoration(ITALIC, false);
+    @NotNull public final static TextComponent UNKNOWN_DROP_TEXT = LORE_PREFIX.append(Component.text("Unknown").decoration(OBFUSCATED, true));
     @NotNull private final static Set<RandomEventsPlayer> players = new HashSet<>();
+    @NotNull private final Set<Object> learnedDropSeeds = new HashSet<>();
+    @NotNull private final Map<Object,Set<ItemStack>> itemsWithLore = new HashMap<>();
+    private boolean requireLearnItems = false;
 
     public RandomEventsGame(@NotNull RandomEventsPlugin plugin) {
         this.plugin = plugin;
@@ -219,7 +222,7 @@ public class RandomEventsGame {
         return getNewDropsFor(entity.getType(), entity instanceof InventoryHolder ? (InventoryHolder) entity : null);
     }
 
-    public Component getDropsTextForDrops(@NotNull List<ItemStack> newDroppedItems) {
+    public Component getDropsTextFor(@NotNull List<ItemStack> newDroppedItems) {
         Component loreToAdd = LORE_PREFIX.append(Component.translatable(newDroppedItems.remove(0).translationKey(), BLUE).decoration(BOLD, false));
         for (ItemStack newDroppedItem : newDroppedItems) {
             loreToAdd = loreToAdd.append(Component.text(", ", DARK_GRAY));
@@ -231,29 +234,50 @@ public class RandomEventsGame {
         return loreToAdd;
     }
     public Component getDropsTextFor(@NotNull Object seed) {
-        return getDropsTextForDrops(getNewDropsFor(seed, null));
+        if (isLearned(seed)) return getDropsTextFor(getNewDropsFor(seed, null));
+        return UNKNOWN_DROP_TEXT;
     }
-    public void addLoreTo(@Nullable ItemStack itemStack) {
-        if (itemStack != null && itemStack.getType() != Material.AIR && !itemStack.getItemMeta().getPersistentDataContainer().has(plugin.ITEM_LORE_HASH_KEY)) {
-            final Component loreToAdd;
-            if (itemStack.getType().isBlock()) {
-                loreToAdd = getDropsTextFor(itemStack.getType());
-            } else if (itemStack.getItemMeta() instanceof SpawnEggMeta) {
-                loreToAdd = getDropsTextFor(EntityType.valueOf(itemStack.getType().name().replace("_SPAWN_EGG", "")));
-            } else {
-                return;
-            }
-            final List<Component> currentLore = itemStack.lore();
-            if (currentLore == null) {
-                itemStack.lore(List.of(loreToAdd));
-            } else {
-                currentLore.add(loreToAdd);
-                itemStack.lore(currentLore);
-            }
-            final ItemMeta itemMeta = itemStack.hasItemMeta() ? itemStack.getItemMeta() : Bukkit.getItemFactory().getItemMeta(itemStack.getType());
-            itemMeta.getPersistentDataContainer().set(plugin.ITEM_LORE_HASH_KEY, PersistentDataType.INTEGER, loreToAdd.hashCode());
-            itemStack.setItemMeta(itemMeta);
+
+    public Object getSeedFor(@Nullable ItemStack itemStack) {
+        if (itemStack == null || itemStack.getType() == Material.AIR) {
+            return null;
         }
+        if (itemStack.getType().isBlock()) {
+            return itemStack.getType();
+        }
+        if (itemStack.getItemMeta() instanceof SpawnEggMeta) {
+            return EntityType.valueOf(itemStack.getType().name().replace("_SPAWN_EGG", ""));
+        }
+        return null;
+    }
+
+    public boolean hasLore(@Nullable ItemStack itemStack) {
+        if (itemStack == null) return false;
+        final ItemMeta itemMeta = itemStack.getItemMeta();
+        if (itemMeta == null) return false;
+        return itemMeta.getPersistentDataContainer().has(plugin.ITEM_LORE_HASH_KEY);
+    }
+
+    public void addLoreTo(@Nullable ItemStack itemStack) {
+        if (itemStack == null || hasLore(itemStack)) return;
+        final Object seed = getSeedFor(itemStack);
+        if (seed == null) return;
+        final Component loreToAdd = getDropsTextFor(seed);
+
+        final List<Component> currentLore = itemStack.lore();
+        if (currentLore == null) {
+            itemStack.lore(List.of(loreToAdd));
+        } else {
+            currentLore.add(loreToAdd);
+            itemStack.lore(currentLore);
+        }
+
+        final ItemMeta itemMeta = itemStack.hasItemMeta() ? itemStack.getItemMeta() : Bukkit.getItemFactory().getItemMeta(itemStack.getType());
+        itemMeta.getPersistentDataContainer().set(plugin.ITEM_LORE_HASH_KEY, PersistentDataType.INTEGER, loreToAdd.hashCode());
+        itemStack.setItemMeta(itemMeta);
+
+        itemsWithLore.putIfAbsent(seed, new HashSet<>());
+        itemsWithLore.get(seed).add(itemStack);
     }
     public void addLoreTo(@NotNull Inventory inventory) {
         for (ItemStack itemStack : inventory.getContents()) {
@@ -268,23 +292,27 @@ public class RandomEventsGame {
             addLoreTo(player);
         }
     }
+
     public void removeLoreFrom(@Nullable ItemStack itemStack) {
-        if (itemStack != null && itemStack.hasItemMeta()) {
-            final ItemMeta itemMeta = itemStack.getItemMeta();
-            final Integer loreHash = itemMeta.getPersistentDataContainer().get(plugin.ITEM_LORE_HASH_KEY, PersistentDataType.INTEGER);
-            if (loreHash != null) {
-                final List<Component> lore = itemMeta.lore();
-                if (lore != null) {
-                    if (lore.size() > 1) {
-                        lore.removeIf(component -> component.hashCode() == loreHash);
-                        itemMeta.lore(lore);
-                    } else {
-                        itemMeta.lore(null);
-                    }
+        if (itemStack == null) return;
+        final ItemMeta itemMeta = itemStack.getItemMeta();
+        if (itemMeta == null) return;
+        final Integer loreHash = itemMeta.getPersistentDataContainer().get(plugin.ITEM_LORE_HASH_KEY, PersistentDataType.INTEGER);
+        if (loreHash != null) {
+            final List<Component> lore = itemMeta.lore();
+            if (lore != null) {
+                if (lore.size() > 1) {
+                    lore.removeIf(component -> component.hashCode() == loreHash);
+                    itemMeta.lore(lore);
+                } else {
+                    itemMeta.lore(null);
                 }
-                itemMeta.getPersistentDataContainer().remove(plugin.ITEM_LORE_HASH_KEY);
-                itemStack.setItemMeta(itemMeta);
             }
+            itemMeta.getPersistentDataContainer().remove(plugin.ITEM_LORE_HASH_KEY);
+            itemStack.setItemMeta(itemMeta);
+        }
+        for (Set<ItemStack> items : itemsWithLore.values()) {
+            items.remove(itemStack);
         }
     }
     public void removeLoreFrom(@NotNull Inventory inventory) {
@@ -300,6 +328,7 @@ public class RandomEventsGame {
             removeLoreFrom(player);
         }
     }
+
     public void handleLoreFor(@Nullable ItemStack itemStack) {
         if (itemStack != null) {
             if (isOngoing()) {
@@ -322,6 +351,48 @@ public class RandomEventsGame {
         } else {
             removeLoreFrom(inventoryHolder);
         }
+    }
+
+    public void resetLoreFor(@NotNull ItemStack itemStack) {
+        removeLoreFrom(itemStack);
+        if (isOngoing()) addLoreTo(itemStack);
+    }
+    public void resetLore() {
+        for (Set<ItemStack> items : itemsWithLore.values()) {
+            for (ItemStack itemStack : items) {
+                resetLoreFor(itemStack);
+            }
+        }
+    }
+
+    public boolean isLearned(@NotNull Object seed) {
+        return learnedDropSeeds.contains(seed);
+    }
+
+    public void learn(@NotNull Object seed) {
+        learnedDropSeeds.add(seed);
+        for (ItemStack itemStack : itemsWithLore.get(seed)) {
+            resetLoreFor(itemStack);
+        }
+    }
+
+    public void unlearn(@NotNull Object seed) {
+        learnedDropSeeds.remove(seed);
+        for (ItemStack itemStack : itemsWithLore.get(seed)) {
+            resetLoreFor(itemStack);
+        }
+    }
+
+    public boolean doesRequireLearnItems() {
+        return requireLearnItems;
+    }
+    public void setRequireLearnItems(boolean requireLearnItems) {
+        if (requireLearnItems != this.requireLearnItems)
+            toggleRequireLearnItems();
+    }
+    public void toggleRequireLearnItems() {
+        requireLearnItems = !requireLearnItems;
+        if (isOngoing()) resetLore();
     }
 
     public boolean isOngoing() {
