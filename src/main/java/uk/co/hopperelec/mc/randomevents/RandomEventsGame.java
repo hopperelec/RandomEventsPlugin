@@ -369,8 +369,10 @@ public class RandomEventsGame {
 
     public void learn(@NotNull Object seed) {
         learnedDropSeeds.add(seed);
-        for (ItemStack itemStack : itemsWithLore.get(seed)) {
-            resetLoreFor(itemStack);
+        if (itemsWithLore.containsKey(seed)) {
+            for (ItemStack itemStack : itemsWithLore.get(seed)) {
+                resetLoreFor(itemStack);
+            }
         }
     }
 
