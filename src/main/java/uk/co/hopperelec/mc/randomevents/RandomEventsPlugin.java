@@ -86,7 +86,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     }
     @EventHandler
     public void onInventoryClose(@NotNull InventoryCloseEvent event) {
-        if (isInOngoingGame(event.getPlayer())) {
+        if (event.getInventory().getViewers().stream().noneMatch(this::isInOngoingGame)) {
             game.removeLoreFrom(event.getInventory());
         }
     }
