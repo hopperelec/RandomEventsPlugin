@@ -91,6 +91,12 @@ public class RandomEventsCommands extends BaseCommand {
         }
     }
 
+    @Subcommand("seed")
+    @Description("View the seed used to generate the random block and entity drops")
+    public void onSeed(@NotNull RandomEventsGame game, CommandSender sender) {
+        sender.sendMessage(Long.toString(game.getLootSeed()));
+    }
+
     @Subcommand("set")
     @Description("Toggle boolean flags")
     public class RandomEventsToggleCommands extends BaseCommand {
@@ -110,6 +116,10 @@ public class RandomEventsCommands extends BaseCommand {
         @Subcommand("learning")
         public void onSetLearning(@NotNull RandomEventsGame game, @Name("value") boolean value) {
             game.setRequireLearnItems(value);
+        }
+        @Subcommand("seed")
+        public void onSetSeed(@NotNull RandomEventsGame game, @Name("seed") long seed) {
+            game.setLootSeed(seed);
         }
     }
 }

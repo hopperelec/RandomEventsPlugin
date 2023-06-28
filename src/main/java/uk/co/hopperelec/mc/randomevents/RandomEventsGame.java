@@ -37,7 +37,7 @@ public class RandomEventsGame {
     @NotNull private final TimeInSeconds countdown = new TimeInSeconds();
     @NotNull private final TimeInSeconds delay = new TimeInSeconds();
     @NotNull private final Random eventRandomizer = new Random();
-    public long lootSeed = new Random().nextLong();
+    private long lootSeed = new Random().nextLong();
     public final static short TELEPORT_SEARCH_RADIUS = 32;
     @NotNull public final static TextComponent LORE_PREFIX = Component.text("Drops: ", YELLOW, BOLD).decoration(ITALIC, false);
     @NotNull public final static TextComponent UNKNOWN_DROP_TEXT = LORE_PREFIX.append(Component.text("Unknown").decoration(OBFUSCATED, true));
@@ -432,5 +432,13 @@ public class RandomEventsGame {
             throw new IllegalArgumentException("Can not set countdown to higher than delay!");
         }
         countdown.set(newCountdown);
+    }
+
+    public long getLootSeed() {
+        return lootSeed;
+    }
+    public void setLootSeed(long seed) {
+        lootSeed = seed;
+        // resetLore();
     }
 }
