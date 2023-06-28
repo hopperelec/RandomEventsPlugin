@@ -5,12 +5,10 @@ import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.BlockState;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Damageable;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -200,26 +198,13 @@ public class RandomEventsGame {
     private Material getNewDropFor(@NotNull Object seed) {
         return getRandomWhich(Material.values(), Material::isItem, new Random(lootSeed + seed.hashCode()));
     }
-    public List<ItemStack> getNewDropsFor(Object seed, @Nullable InventoryHolder inventoryHolder) {
+    public List<ItemStack> getNewDropsFor(Object seed) {
         final List<ItemStack> newDroppedItems = new ArrayList<>();
         newDroppedItems.add(new ItemStack(getNewDropFor(seed)));
-        if (inventoryHolder != null) {
-            for (ItemStack itemStack : inventoryHolder.getInventory().getContents()) {
-                if (itemStack != null) {
-                    newDroppedItems.add(itemStack);
-                }
-            }
-        }
         return newDroppedItems;
     }
-    public List<ItemStack> getNewDropsFor(@NotNull BlockState blockState) {
-        return getNewDropsFor(blockState.getType(), blockState instanceof InventoryHolder ? (InventoryHolder) blockState : null);
-    }
-    public List<ItemStack> getNewDropsFor(@NotNull Entity entity) {
-        return getNewDropsFor(entity.getType(), entity instanceof InventoryHolder ? (InventoryHolder) entity : null);
-    }
 
-    public @NotNull Component getDropsTextFor(@NotNull List<ItemStack> newDroppedItems) {
+    public @NotNull Component getDropsTextForItems(@NotNull List<ItemStack> newDroppedItems) {
         Component loreToAdd = LORE_PREFIX.append(Component.translatable(newDroppedItems.remove(0).translationKey(), BLUE).decoration(BOLD, false));
         for (ItemStack newDroppedItem : newDroppedItems) {
             loreToAdd = loreToAdd.append(Component.text(", ", DARK_GRAY));
@@ -231,7 +216,7 @@ public class RandomEventsGame {
         return loreToAdd;
     }
     public @NotNull Component getDropsTextFor(@NotNull Object seed) {
-        if (isLearned(seed)) return getDropsTextFor(getNewDropsFor(seed, null));
+        if (isLearned(seed)) return getDropsTextForItems(getNewDropsFor(seed));
         return UNKNOWN_DROP_TEXT;
     }
 
