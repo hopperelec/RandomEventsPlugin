@@ -3,6 +3,7 @@ package uk.co.hopperelec.mc.randomevents;
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.CommandHelp;
 import co.aikar.commands.annotation.*;
+import co.aikar.commands.bukkit.contexts.OnlinePlayer;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
@@ -36,11 +37,21 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("trigger")
     @Description("Triggers an event")
-    public void onTrigger(@NotNull RandomEventsGame game, @Optional @Name("type")  RandomEventType randomEventType) {
+    public void onTrigger(@NotNull RandomEventsGame game, @Optional @Name("type") RandomEventType randomEventType) {
         if (randomEventType == null) {
             game.doRandomEvent();
         } else {
             game.doRandomEvent(randomEventType);
+        }
+    }
+
+    @Subcommand("triggerplayer")
+    @Description("Triggers an event on a given player")
+    public void onTriggerPlayer(@NotNull RandomEventsGame game, @Name("player") OnlinePlayer player, @Optional @Name("type") RandomEventType randomEventType) {
+        if (randomEventType == null) {
+            game.doRandomEvent(player.getPlayer());
+        } else {
+            game.doRandomEvent(player.getPlayer(), randomEventType);
         }
     }
 
