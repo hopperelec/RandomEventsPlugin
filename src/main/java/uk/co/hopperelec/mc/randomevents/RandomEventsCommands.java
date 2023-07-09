@@ -85,7 +85,6 @@ public class RandomEventsCommands extends BaseCommand {
     }
 
     @Subcommand("listdrops")
-    @CommandAlias("randomevents drops")
     @Description("Lists the drops of the block or entity name given or in your hand")
     public void onListDrops(@NotNull RandomEventsGame game, CommandSender sender, @Optional @Name("name") String name) {
         if (name == null) {
