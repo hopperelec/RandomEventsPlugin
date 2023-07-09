@@ -1,5 +1,6 @@
 package uk.co.hopperelec.mc.randomevents;
 
+import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Bukkit;
@@ -28,6 +29,7 @@ import java.util.function.Predicate;
 
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 import static net.kyori.adventure.text.format.TextDecoration.*;
+import static org.bukkit.Sound.*;
 import static uk.co.hopperelec.mc.randomevents.RandomEventsPlayer.getRandomEventsPlayer;
 
 public class RandomEventsGame {
@@ -116,6 +118,7 @@ public class RandomEventsGame {
                 final Material material = getRandomWhich(Material.values(), Material::isBlock, eventRandomizer);
                 randomEvent.player.setBlock(material);
                 randomEvent.player.sendMessage("Placed a "+material);
+                randomEvent.player.playSound(Sound.sound(BLOCK_STONE_PLACE, Sound.Source.PLAYER, .6f, 1f));
             }
             case ITEM -> {
                 final Material material = getRandomWhich(Material.values(), i -> i.isItem() && i.isEnabledByFeature(randomEvent.player.getWorld()) && !i.isLegacy(), eventRandomizer);
@@ -126,11 +129,13 @@ public class RandomEventsGame {
                 addLoreTo(itemStack);
                 randomEvent.player.giveItem(itemStack);
                 randomEvent.player.sendMessage("Given you "+material);
+                randomEvent.player.playSound(Sound.sound(ENTITY_ITEM_PICKUP, Sound.Source.PLAYER, .3f, 1f));
             }
             case ENTITY -> {
                 final EntityType entityType = getRandomWhich(EntityType.values(), e -> e.isSpawnable() && e.isEnabledByFeature(randomEvent.player.getWorld()), eventRandomizer);
                 randomEvent.player.spawnEntity(entityType);
                 randomEvent.player.sendMessage("Spawned a "+entityType);
+                randomEvent.player.playSound(Sound.sound(ENTITY_GENERIC_SMALL_FALL, Sound.Source.PLAYER, .3f, 1f));
             }
             case TELEPORT -> {
                 final Location location = getRandomSafeLocationNear(randomEvent.player.getLocation());
@@ -139,6 +144,7 @@ public class RandomEventsGame {
                 } else {
                     randomEvent.player.teleport(location);
                     randomEvent.player.sendMessage("Teleported!");
+                    randomEvent.player.playSound(Sound.sound(ENTITY_ENDERMAN_TELEPORT, Sound.Source.PLAYER, .6f, 1f));
                 }
             }
             case EFFECT -> {
@@ -147,6 +153,7 @@ public class RandomEventsGame {
                 final PotionEffect potionEffect = new PotionEffect(potionEffectType, delay.asInt()*20, amplifier);
                 randomEvent.player.setPotionEffect(potionEffect);
                 randomEvent.player.sendMessage("Effected you with "+potionEffectType.getName()+" "+amplifier);
+                randomEvent.player.playSound(Sound.sound(ENTITY_GENERIC_DRINK, Sound.Source.PLAYER, .6f, 1f));
             }
         }
     }
@@ -353,10 +360,14 @@ public class RandomEventsGame {
     }
 
     public void learn(@NotNull Object seed) {
-        learnedDropSeeds.add(seed);
-        if (itemsWithLore.containsKey(seed)) {
-            for (ItemStack itemStack : itemsWithLore.get(seed)) {
-                resetLoreFor(itemStack);
+        if (learnedDropSeeds.add(seed)) {
+            for (RandomEventsPlayer player : players) {
+                player.playSound(Sound.sound(BLOCK_ENCHANTMENT_TABLE_USE, Sound.Source.PLAYER, .3f, 1f));
+            }
+            if (itemsWithLore.containsKey(seed)) {
+                for (ItemStack itemStack : itemsWithLore.get(seed)) {
+                    resetLoreFor(itemStack);
+                }
             }
         }
     }

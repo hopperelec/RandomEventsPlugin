@@ -1,5 +1,6 @@
 package uk.co.hopperelec.mc.randomevents;
 
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -47,6 +48,10 @@ public class RandomEventsPlayer implements InventoryHolder {
         clearPotionEffect();
         lastPotionEffect = potionEffect.getType();
         spigotPlayer.addPotionEffect(potionEffect);
+    }
+
+    public void playSound(@NotNull Sound sound) {
+        spigotPlayer.playSound(sound);
     }
 
     public void sendMessage(@NotNull String message) {
