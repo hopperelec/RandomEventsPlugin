@@ -118,7 +118,7 @@ public class RandomEventsGame {
                 randomEvent.player.sendMessage("Placed a "+material);
             }
             case ITEM -> {
-                final Material material = getRandomWhich(Material.values(), Material::isItem, eventRandomizer);
+                final Material material = getRandomWhich(Material.values(), i -> i.isItem() && i.isEnabledByFeature(randomEvent.player.getWorld()) && !i.isLegacy(), eventRandomizer);
                 final ItemStack itemStack = new ItemStack(material);
                 if (itemStack.getItemMeta() instanceof Damageable damageable) {
                     damageable.setHealth(eventRandomizer.nextInt(material.getMaxDurability())+1);
