@@ -7,6 +7,7 @@ import co.aikar.commands.bukkit.contexts.OnlinePlayer;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,13 +74,29 @@ public class RandomEventsCommands extends BaseCommand {
         return null;
     }
 
+    private void listDrops(@NotNull RandomEventsGame game, CommandSender sender, @Nullable Object seed) {
+        if (seed == null) {
+            sender.sendMessage("The item in your hand does not drop items!");
+        } else if (game.isLearned(seed)) {
+            sender.sendMessage(game.getDropsTextFor(seed));
+        } else {
+            sender.sendMessage("You have not learned the drops of this item yet");
+        }
+    }
+
     @Subcommand("listdrops")
     @CommandAlias("randomevents drops")
-    @Description("Lists the drops of the given block or entity name")
-    public void onListDrops(@NotNull RandomEventsGame game, CommandSender sender, @Name("name") String name) {
-        final Object seed = getSeedFromName(sender, name);
-        if (seed != null)
-            sender.sendMessage(game.getDropsTextFor(seed));
+    @Description("Lists the drops of the block or entity name given or in your hand")
+    public void onListDrops(@NotNull RandomEventsGame game, CommandSender sender, @Optional @Name("name") String name) {
+        if (name == null) {
+            if (sender instanceof Player player) {
+                listDrops(game, sender, game.getSeedFor(player.getInventory().getItemInMainHand()));
+            } else {
+                sender.sendMessage("listdrops can only be used without a name argument if you are a player");
+            }
+        } else {
+            listDrops(game, sender, getSeedFromName(sender, name));
+        }
     }
 
     @Subcommand("learn")
