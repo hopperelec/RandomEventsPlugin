@@ -3,12 +3,20 @@ package uk.co.hopperelec.mc.randomevents;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.levelgen.structure.templatesystem.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.craftbukkit.v1_20_R1.CraftWorld;
 import org.bukkit.entity.Damageable;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -155,6 +163,34 @@ public class RandomEventsGame {
                 randomEvent.player.sendMessage("Effected you with "+potionEffectType.getName()+" "+amplifier);
                 randomEvent.player.playSound(Sound.sound(ENTITY_GENERIC_DRINK, Sound.Source.PLAYER, .6f, 1f));
             }
+            case STRUCTURE -> {
+                final ServerLevel nmsWorld = ((CraftWorld) randomEvent.player.getWorld()).getHandle();
+                final StructureTemplateManager structureTemplateManager = nmsWorld.getStructureManager();
+                final ResourceLocation structureKey = getRandomWhich(
+                        structureTemplateManager.listTemplates().toArray(ResourceLocation[]::new),
+                        key -> key.getNamespace().equals(ResourceLocation.DEFAULT_NAMESPACE),
+                        eventRandomizer
+                );
+                structureTemplateManager.get(structureKey).ifPresentOrElse(
+                        structureTemplate -> {
+                            final Location loc = randomEvent.player.getLocation();
+                            final BlockPos blockPos = BlockPos.containing(loc.x(), loc.y(), loc.z());
+                            final float integrity = eventRandomizer.nextFloat()+Float.MIN_NORMAL;
+                            structureTemplate.placeInWorld(nmsWorld, blockPos, blockPos,
+                                    new StructurePlaceSettings()
+                                            .addProcessor(new BlockRotProcessor(integrity))
+                                            .addProcessor(JigsawReplacementProcessor.INSTANCE)
+                                            .addProcessor(BlockIgnoreProcessor.STRUCTURE_AND_AIR)
+                                            .setMirror(getRandomFrom(Mirror.values(), eventRandomizer))
+                                            .setRotation(getRandomFrom(Rotation.values(), eventRandomizer)),
+                                    RandomSource.create(), 2
+                            );
+                            randomEvent.player.sendMessage("Placed a "+structureKey.getPath()+" with "+Math.round(integrity*1000)/10f+"% integrity");
+                            randomEvent.player.playSound(Sound.sound(BLOCK_WOOD_PLACE, Sound.Source.PLAYER, 1f, 1f));
+                        },
+                        () -> randomEvent.player.sendMessage("Tried to place structure "+structureKey+" but could not find it")
+                );
+            }
         }
     }
 
@@ -192,7 +228,7 @@ public class RandomEventsGame {
     private <T> T getRandomFrom(@NotNull T @NotNull [] array, @NotNull Random random) {
         return array[random.nextInt(array.length)];
     }
-    private <T> T getRandomWhich(T[] array, @NotNull Predicate<T> which, @NotNull Random random) {
+    private <T> T getRandomWhich(@NotNull T @NotNull [] array, @NotNull Predicate<T> which, @NotNull Random random) {
         while (true) {
             final T option = getRandomFrom(array, random);
             if (which.test(option)) {

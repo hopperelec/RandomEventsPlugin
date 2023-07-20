@@ -6,4 +6,5 @@ public enum RandomEventType {
     ENTITY,
     TELEPORT,
     EFFECT,
+    STRUCTURE,
 }
