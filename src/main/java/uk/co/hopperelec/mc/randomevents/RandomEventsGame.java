@@ -323,9 +323,10 @@ public class RandomEventsGame {
     }
 
     public void unlearn(@NotNull Object seed) {
-        learnedDropSeeds.remove(seed);
-        for (ItemStack itemStack : itemsWithLore.get(seed)) {
-            resetLoreFor(itemStack);
+        if (learnedDropSeeds.remove(seed) && itemsWithLore.containsKey(seed)) {
+            for (ItemStack itemStack : itemsWithLore.get(seed)) {
+                resetLoreFor(itemStack);
+            }
         }
     }
 
