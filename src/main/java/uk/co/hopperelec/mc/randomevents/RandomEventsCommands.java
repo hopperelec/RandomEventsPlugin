@@ -58,7 +58,18 @@ public class RandomEventsCommands extends BaseCommand {
         }
     }
 
-    private @Nullable Object getSeedFromName(@NotNull CommandSender sender, @NotNull String name) {
+    private @Nullable Object getSeedFromName(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Nullable String name) {
+        if (name == null) {
+            if (sender instanceof Player player) {
+                final Object seed = game.getSeedFor(player.getInventory().getItemInMainHand());
+                if (seed == null) {
+                    sender.sendMessage("The item in your hand does not drop items!");
+                }
+                return seed;
+            }
+            sender.sendMessage("Please specify the name of a material or entity");
+            return null;
+        }
         name = name.toUpperCase();
         final Material material = Material.getMaterial(name);
         if (material != null) {
@@ -76,34 +87,23 @@ public class RandomEventsCommands extends BaseCommand {
         return null;
     }
 
-    private void listDrops(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Nullable Object seed) {
-        if (seed == null) {
-            sender.sendMessage("The item in your hand does not drop items!");
-        } else if (game.isLearned(seed)) {
-            sender.sendMessage(game.getDropsTextFor(seed));
-        } else {
-            sender.sendMessage("You have not learned the drops of this item yet");
-        }
-    }
-
     @Subcommand("listdrops")
     @Description("Lists the drops of the block or entity name given or in your hand")
     public void onListDrops(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Optional @Name("name") String name) {
-        if (name == null) {
-            if (sender instanceof Player player) {
-                listDrops(game, sender, game.getSeedFor(player.getInventory().getItemInMainHand()));
+        final Object seed = getSeedFromName(game, sender, name);
+        if (seed != null) {
+            if (game.isLearned(seed) || !game.doesRequireLearning()) {
+                sender.sendMessage(game.getDropsTextFor(seed));
             } else {
-                sender.sendMessage("listdrops can only be used without a name argument if you are a player");
+                sender.sendMessage("You have not learned the drops of this item yet");
             }
-        } else {
-            listDrops(game, sender, getSeedFromName(sender, name));
         }
     }
 
     @Subcommand("learn")
     @Description("Learn the drops of the given block or entity name to deobfuscate them in the drops list")
-    public void onLearn(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @NotNull @Name("name") String name) {
-        final Object seed = getSeedFromName(sender, name);
+    public void onLearn(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Optional @Name("name") String name) {
+        final Object seed = getSeedFromName(game, sender, name);
         if (seed != null) {
             game.learn(seed);
             sender.sendMessage("Learned!");
@@ -112,8 +112,8 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("unlearn")
     @Description("Unlearn the drops of the given block or entity name to reobfuscate them in the drops list")
-    public void onUnlearn(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @NotNull @Name("name") String name) {
-        final Object seed = getSeedFromName(sender, name);
+    public void onUnlearn(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Optional @Name("name") String name) {
+        final Object seed = getSeedFromName(game, sender, name);
         if (seed != null) {
             game.unlearn(seed);
             sender.sendMessage("Unlearned!");
