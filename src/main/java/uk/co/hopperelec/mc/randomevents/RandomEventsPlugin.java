@@ -256,7 +256,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(@NotNull InventoryClickEvent event) {
         // Excessive, but more readable and can be used to fix bugged items
-        game.handleLoreFor(event.getCursor());
+        game.resetLoreFor(event.getCursor());
     }
     @EventHandler
     public void onPrepareItemCraft(@NotNull PrepareItemCraftEvent event) {

@@ -290,7 +290,7 @@ public class RandomEventsGame {
         handleLoreFor(inventoryHolder.getInventory());
     }
 
-    public void resetLoreFor(@NotNull ItemStack itemStack) {
+    public void resetLoreFor(@Nullable ItemStack itemStack) {
         removeLoreFrom(itemStack);
         if (currentlyDisplayingLore()) addLoreTo(itemStack);
     }
