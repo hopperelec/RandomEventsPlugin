@@ -150,5 +150,13 @@ public class RandomEventsCommands extends BaseCommand {
         public void onSetSeed(@NotNull RandomEventsGame game, @Name("seed") long seed) {
             game.setLootSeed(seed);
         }
+        @Subcommand("timeremaining")
+        public void onSetTimeRemaining(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @NotNull @Name("timeremaining") TimeInSeconds time) {
+            if (time.moreThan(game.getCountdownLength())) {
+                sender.sendMessage("Can not set time remaining to higher than the countdown's length!");
+            } else {
+                game.setTimeTillNextEvent(time);
+            }
+        }
     }
 }
