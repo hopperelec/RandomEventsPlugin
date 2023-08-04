@@ -11,6 +11,9 @@ public class TimeInSeconds {
     public TimeInSeconds(int signedTime) {
         set(signedTime);
     }
+    public TimeInSeconds(TimeInSeconds newValue) {
+        set(newValue);
+    }
 
     public int asInt() {
         return unsignedTime+Short.MAX_VALUE;

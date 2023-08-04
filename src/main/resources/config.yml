@@ -1,0 +1,654 @@
+teleport_search_radius: 32 # Cube radius to search for safe teleport locations. Higher numbers will cause lag
+countdown_location: bossbar # Where to display the countdown; one of: none/bossbar/sidebar/action_bar
+
+event_sound_effects:
+  block:
+    sound: BLOCK_STONE_PLACE
+    volume: .6
+    pitch: 1
+  item:
+    sound: ENTITY_ITEM_PICKUP
+    volume: .3
+    pitch: 1
+  entity:
+    sound: ENTITY_GENERIC_SMALL_FALL
+    volume: .3
+    pitch: 1
+  teleport:
+    sound: ENTITY_ENDERMAN_TELEPORT
+    volume: .6
+    pitch: 1
+  effect:
+    sound: ENTITY_GENERIC_DRINK
+    volume: .6
+    pitch: 1
+  structure:
+    sound: BLOCK_WOOD_PLACE
+    volume: 1
+    pitch: 1
+learn_drop_sound_effect:
+  sound: BLOCK_ENCHANTMENT_TABLE_USE
+  volume: .3
+  pitch: 1
+
+
+# All these can be configured per-game. These are just the default values.
+defaults:
+  countdown_length: 30 # Number of seconds between events
+  loot_seed: -1 # Seed used for block and entity drops, -1 for random
+  display_lore: true # Whether to add lore to blocks and spawn eggs to display drops
+  require_learning: true # Whether players must first learn the drops of a block or entity before they are displayed in the lore
+  share_scope: none # How much of an event is shared between all players in a game; one of: none/event_type/all
+  weight_preset: default
+
+# Weights are relative, where the default is 1
+# Something with a weight of 0.5 is half as likely to happen as something not listed.
+# Something with a weight of 2 is twice as likely to happen as something not listed.
+weight_presets:
+  default:
+    event_types:
+      block: 100
+      item: 75
+      entity: 5
+      teleport: 3
+      effect: 3
+      structure: 1
+
+    sub_events:
+      block:
+        VOID_AIR: 0
+        CAVE_AIR: 0
+        STRUCTURE_VOID: 0
+        WALL_TORCH: 0
+
+        # Dyed blocks
+        ORANGE_WOOL: 0.25
+        MAGENTA_WOOL: 0.25
+        LIGHT_BLUE_WOOL: 0.25
+        YELLOW_WOOL: 0.25
+        LIME_WOOL: 0.25
+        PINK_WOOL: 0.25
+        GRAY_WOOL: 0.25
+        LIGHT_GRAY_WOOL: 0.25
+        CYAN_WOOL: 0.25
+        PURPLE_WOOL: 0.25
+        BLUE_WOOL: 0.25
+        BROWN_WOOL: 0.25
+        GREEN_WOOL: 0.25
+        RED_WOOL: 0.25
+        BLACK_WOOL: 0.25
+
+        WHITE_TERRACOTTA: 0.25
+        ORANGE_TERRACOTTA: 0.25
+        MAGENTA_TERRACOTTA: 0.25
+        LIGHT_BLUE_TERRACOTTA: 0.25
+        YELLOW_TERRACOTTA: 0.25
+        LIME_TERRACOTTA: 0.25
+        PINK_TERRACOTTA: 0.25
+        GRAY_TERRACOTTA: 0.25
+        LIGHT_GRAY_TERRACOTTA: 0.25
+        CYAN_TERRACOTTA: 0.25
+        PURPLE_TERRACOTTA: 0.25
+        BLUE_TERRACOTTA: 0.25
+        BROWN_TERRACOTTA: 0.25
+        GREEN_TERRACOTTA: 0.25
+        RED_TERRACOTTA: 0.25
+        BLACK_TERRACOTTA: 0.25
+
+        ORANGE_GLAZED_TERRACOTTA: 0.25
+        MAGENTA_GLAZED_TERRACOTTA: 0.25
+        LIGHT_BLUE_GLAZED_TERRACOTTA: 0.25
+        YELLOW_GLAZED_TERRACOTTA: 0.25
+        LIME_GLAZED_TERRACOTTA: 0.25
+        PINK_GLAZED_TERRACOTTA: 0.25
+        GRAY_GLAZED_TERRACOTTA: 0.25
+        LIGHT_GRAY_GLAZED_TERRACOTTA: 0.25
+        CYAN_GLAZED_TERRACOTTA: 0.25
+        PURPLE_GLAZED_TERRACOTTA: 0.25
+        BLUE_GLAZED_TERRACOTTA: 0.25
+        BROWN_GLAZED_TERRACOTTA: 0.25
+        GREEN_GLAZED_TERRACOTTA: 0.25
+        RED_GLAZED_TERRACOTTA: 0.25
+        BLACK_GLAZED_TERRACOTTA: 0.25
+
+        WHITE_STAINED_GLASS: 0.25
+        ORANGE_STAINED_GLASS: 0.25
+        MAGENTA_STAINED_GLASS: 0.25
+        LIGHT_BLUE_STAINED_GLASS: 0.25
+        YELLOW_STAINED_GLASS: 0.25
+        LIME_STAINED_GLASS: 0.25
+        PINK_STAINED_GLASS: 0.25
+        GRAY_STAINED_GLASS: 0.25
+        LIGHT_GRAY_STAINED_GLASS: 0.25
+        CYAN_STAINED_GLASS: 0.25
+        PURPLE_STAINED_GLASS: 0.25
+        BLUE_STAINED_GLASS: 0.25
+        BROWN_STAINED_GLASS: 0.25
+        GREEN_STAINED_GLASS: 0.25
+        RED_STAINED_GLASS: 0.25
+        BLACK_STAINED_GLASS: 0.25
+
+        WHITE_STAINED_GLASS_PANE: 0.25
+        ORANGE_STAINED_GLASS_PANE: 0.25
+        MAGENTA_STAINED_GLASS_PANE: 0.25
+        LIGHT_BLUE_STAINED_GLASS_PANE: 0.25
+        YELLOW_STAINED_GLASS_PANE: 0.25
+        LIME_STAINED_GLASS_PANE: 0.25
+        PINK_STAINED_GLASS_PANE: 0.25
+        GRAY_STAINED_GLASS_PANE: 0.25
+        LIGHT_GRAY_STAINED_GLASS_PANE: 0.25
+        CYAN_STAINED_GLASS_PANE: 0.25
+        PURPLE_STAINED_GLASS_PANE: 0.25
+        BLUE_STAINED_GLASS_PANE: 0.25
+        BROWN_STAINED_GLASS_PANE: 0.25
+        GREEN_STAINED_GLASS_PANE: 0.25
+        RED_STAINED_GLASS_PANE: 0.25
+        BLACK_STAINED_GLASS_PANE: 0.25
+
+        WHITE_SHULKER_BOX: 0.25
+        ORANGE_SHULKER_BOX: 0.25
+        MAGENTA_SHULKER_BOX: 0.25
+        LIGHT_BLUE_SHULKER_BOX: 0.25
+        YELLOW_SHULKER_BOX: 0.25
+        LIME_SHULKER_BOX: 0.25
+        PINK_SHULKER_BOX: 0.25
+        GRAY_SHULKER_BOX: 0.25
+        LIGHT_GRAY_SHULKER_BOX: 0.25
+        CYAN_SHULKER_BOX: 0.25
+        PURPLE_SHULKER_BOX: 0.25
+        BLUE_SHULKER_BOX: 0.25
+        BROWN_SHULKER_BOX: 0.25
+        GREEN_SHULKER_BOX: 0.25
+        RED_SHULKER_BOX: 0.25
+        BLACK_SHULKER_BOX: 0.25
+
+        ORANGE_BED: 0.25
+        MAGENTA_BED: 0.25
+        LIGHT_BLUE_BED: 0.25
+        YELLOW_BED: 0.25
+        LIME_BED: 0.25
+        PINK_BED: 0.25
+        GRAY_BED: 0.25
+        LIGHT_GRAY_BED: 0.25
+        CYAN_BED: 0.25
+        PURPLE_BED: 0.25
+        BLUE_BED: 0.25
+        BROWN_BED: 0.25
+        GREEN_BED: 0.25
+        RED_BED: 0.25
+        BLACK_BED: 0.25
+
+        ORANGE_CANDLE: 0.25
+        MAGENTA_CANDLE: 0.25
+        LIGHT_BLUE_CANDLE: 0.25
+        YELLOW_CANDLE: 0.25
+        LIME_CANDLE: 0.25
+        PINK_CANDLE: 0.25
+        GRAY_CANDLE: 0.25
+        LIGHT_GRAY_CANDLE: 0.25
+        CYAN_CANDLE: 0.25
+        PURPLE_CANDLE: 0.25
+        BLUE_CANDLE: 0.25
+        BROWN_CANDLE: 0.25
+        GREEN_CANDLE: 0.25
+        RED_CANDLE: 0.25
+        BLACK_CANDLE: 0.25
+
+        ORANGE_CANDLE_CAKE: 0.25
+        MAGENTA_CANDLE_CAKE: 0.25
+        LIGHT_BLUE_CANDLE_CAKE: 0.25
+        YELLOW_CANDLE_CAKE: 0.25
+        LIME_CANDLE_CAKE: 0.25
+        PINK_CANDLE_CAKE: 0.25
+        GRAY_CANDLE_CAKE: 0.25
+        LIGHT_GRAY_CANDLE_CAKE: 0.25
+        CYAN_CANDLE_CAKE: 0.25
+        PURPLE_CANDLE_CAKE: 0.25
+        BLUE_CANDLE_CAKE: 0.25
+        BROWN_CANDLE_CAKE: 0.25
+        GREEN_CANDLE_CAKE: 0.25
+        RED_CANDLE_CAKE: 0.25
+        BLACK_CANDLE_CAKE: 0.25
+
+        ORANGE_CONCRETE_POWDER: 0.25
+        MAGENTA_CONCRETE_POWDER: 0.25
+        LIGHT_BLUE_CONCRETE_POWDER: 0.25
+        YELLOW_CONCRETE_POWDER: 0.25
+        LIME_CONCRETE_POWDER: 0.25
+        PINK_CONCRETE_POWDER: 0.25
+        GRAY_CONCRETE_POWDER: 0.25
+        LIGHT_GRAY_CONCRETE_POWDER: 0.25
+        CYAN_CONCRETE_POWDER: 0.25
+        PURPLE_CONCRETE_POWDER: 0.25
+        BLUE_CONCRETE_POWDER: 0.25
+        BROWN_CONCRETE_POWDER: 0.25
+        GREEN_CONCRETE_POWDER: 0.25
+        RED_CONCRETE_POWDER: 0.25
+        BLACK_CONCRETE_POWDER: 0.25
+
+        ORANGE_CONCRETE: 0.25
+        MAGENTA_CONCRETE: 0.25
+        LIGHT_BLUE_CONCRETE: 0.25
+        YELLOW_CONCRETE: 0.25
+        LIME_CONCRETE: 0.25
+        PINK_CONCRETE: 0.25
+        GRAY_CONCRETE: 0.25
+        LIGHT_GRAY_CONCRETE: 0.25
+        CYAN_CONCRETE: 0.25
+        PURPLE_CONCRETE: 0.25
+        BLUE_CONCRETE: 0.25
+        BROWN_CONCRETE: 0.25
+        GREEN_CONCRETE: 0.25
+        RED_CONCRETE: 0.25
+        BLACK_CONCRETE: 0.25
+
+        ORANGE_CARPET: 0.25
+        MAGENTA_CARPET: 0.25
+        LIGHT_BLUE_CARPET: 0.25
+        YELLOW_CARPET: 0.25
+        LIME_CARPET: 0.25
+        PINK_CARPET: 0.25
+        GRAY_CARPET: 0.25
+        LIGHT_GRAY_CARPET: 0.25
+        CYAN_CARPET: 0.25
+        PURPLE_CARPET: 0.25
+        BLUE_CARPET: 0.25
+        BROWN_CARPET: 0.25
+        GREEN_CARPET: 0.25
+        RED_CARPET: 0.25
+        BLACK_CARPET: 0.25
+
+        # Banners (halved again to split between normal and wall banners)
+        WHITE_BANNER: 0.25
+        ORANGE_BANNER: 0.125
+        MAGENTA_BANNER: 0.125
+        LIGHT_BLUE_BANNER: 0.125
+        YELLOW_BANNER: 0.125
+        LIME_BANNER: 0.125
+        PINK_BANNER: 0.125
+        GRAY_BANNER: 0.125
+        LIGHT_GRAY_BANNER: 0.125
+        CYAN_BANNER: 0.125
+        PURPLE_BANNER: 0.125
+        BLUE_BANNER: 0.125
+        BROWN_BANNER: 0.125
+        GREEN_BANNER: 0.125
+        RED_BANNER: 0.125
+        BLACK_BANNER: 0.125
+
+        WHITE_WALL_BANNER: 0.25
+        ORANGE_WALL_BANNER: 0.125
+        MAGENTA_WALL_BANNER: 0.125
+        LIGHT_BLUE_WALL_BANNER: 0.125
+        YELLOW_WALL_BANNER: 0.125
+        LIME_WALL_BANNER: 0.125
+        PINK_WALL_BANNER: 0.125
+        GRAY_WALL_BANNER: 0.125
+        LIGHT_GRAY_WALL_BANNER: 0.125
+        CYAN_WALL_BANNER: 0.125
+        PURPLE_WALL_BANNER: 0.125
+        BLUE_WALL_BANNER: 0.125
+        BROWN_WALL_BANNER: 0.125
+        GREEN_WALL_BANNER: 0.125
+        RED_WALL_BANNER: 0.125
+        BLACK_WALL_BANNER: 0.125
+
+        # Copper
+        EXPOSED_COPPER: 0.5
+        EXPOSED_CUT_COPPER: 0.5
+        EXPOSED_CUT_COPPER_SLAB: 0.5
+        EXPOSED_CUT_COPPER_STAIRS: 0.5
+        WAXED_EXPOSED_COPPER: 0.5
+        WAXED_EXPOSED_CUT_COPPER: 0.5
+        WAXED_EXPOSED_CUT_COPPER_SLAB: 0.5
+        WAXED_EXPOSED_CUT_COPPER_STAIRS: 0.5
+        WEATHERED_COPPER: 0.25
+        WEATHERED_CUT_COPPER: 0.25
+        WEATHERED_CUT_COPPER_SLAB: 0.25
+        WEATHERED_CUT_COPPER_STAIRS: 0.25
+        WAXED_WEATHERED_COPPER: 0.25
+        WAXED_WEATHERED_CUT_COPPER: 0.25
+        WAXED_WEATHERED_CUT_COPPER_SLAB: 0.25
+        WAXED_WEATHERED_CUT_COPPER_STAIRS: 0.25
+        OXIDIZED_COPPER: 0.125
+        OXIDIZED_CUT_COPPER: 0.125
+        OXIDIZED_CUT_COPPER_SLAB: 0.125
+        OXIDIZED_CUT_COPPER_STAIRS: 0.125
+        WAXED_OXIDIZED_COPPER: 0.125
+        WAXED_OXIDIZED_CUT_COPPER: 0.125
+        WAXED_OXIDIZED_CUT_COPPER_SLAB: 0.125
+        WAXED_OXIDIZED_CUT_COPPER_STAIRS: 0.125
+
+      item:
+        # Completely useless
+        AIR: 0
+        STRUCTURE_VOID: 0
+        FILLED_MAP: 0
+        FIREWORK_ROCKET: 0
+        FIREWORK_STAR: 0
+        TIPPED_ARROW: 0 # Defaults to "uncraftable"
+
+        # Cosmetic items
+        DISC_FRAGMENT_5: 0.125
+        MUSIC_DISC_11: 0.125
+        MUSIC_DISC_13: 0.125
+        MUSIC_DISC_5: 0.025
+        MUSIC_DISC_BLOCKS: 0.125
+        MUSIC_DISC_CAT: 0.125
+        MUSIC_DISC_CHIRP: 0.125
+        MUSIC_DISC_FAR: 0.125
+        MUSIC_DISC_MALL: 0.125
+        MUSIC_DISC_MELLOHI: 0.125
+        MUSIC_DISC_OTHERSIDE: 0.125
+        MUSIC_DISC_PIGSTEP: 0.125
+        MUSIC_DISC_RELIC: 0.125
+        MUSIC_DISC_STAL: 0.125
+        MUSIC_DISC_STRAD: 0.125
+        MUSIC_DISC_WAIT: 0.125
+        MUSIC_DISC_WARD: 0.125
+
+        COAST_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        DUNE_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        EYE_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        HOST_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        RAISER_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        RIB_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        TIDE_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        VEX_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        WARD_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+        WILD_ARMOR_TRIM_SMITHING_TEMPLATE: 0.125
+
+        CREEPER_BANNER_PATTERN: 0.2
+        FLOWER_BANNER_PATTERN: 0.2
+        GLOBE_BANNER_PATTERN: 0.2
+        MOJANG_BANNER_PATTERN: 0.2
+        PIGLIN_BANNER_PATTERN: 0.2
+        SKULL_BANNER_PATTERN: 0.2
+
+        # Copper
+        EXPOSED_COPPER: 0.5
+        EXPOSED_CUT_COPPER: 0.5
+        EXPOSED_CUT_COPPER_SLAB: 0.5
+        EXPOSED_CUT_COPPER_STAIRS: 0.5
+        WAXED_EXPOSED_COPPER: 0.5
+        WAXED_EXPOSED_CUT_COPPER: 0.5
+        WAXED_EXPOSED_CUT_COPPER_SLAB: 0.5
+        WAXED_EXPOSED_CUT_COPPER_STAIRS: 0.5
+        WEATHERED_COPPER: 0.25
+        WEATHERED_CUT_COPPER: 0.25
+        WEATHERED_CUT_COPPER_SLAB: 0.25
+        WEATHERED_CUT_COPPER_STAIRS: 0.25
+        WAXED_WEATHERED_COPPER: 0.25
+        WAXED_WEATHERED_CUT_COPPER: 0.25
+        WAXED_WEATHERED_CUT_COPPER_SLAB: 0.25
+        WAXED_WEATHERED_CUT_COPPER_STAIRS: 0.25
+        OXIDIZED_COPPER: 0.125
+        OXIDIZED_CUT_COPPER: 0.125
+        OXIDIZED_CUT_COPPER_SLAB: 0.125
+        OXIDIZED_CUT_COPPER_STAIRS: 0.125
+        WAXED_OXIDIZED_COPPER: 0.125
+        WAXED_OXIDIZED_CUT_COPPER: 0.125
+        WAXED_OXIDIZED_CUT_COPPER_SLAB: 0.125
+        WAXED_OXIDIZED_CUT_COPPER_STAIRS: 0.125
+
+        # Dyed blocks
+        ORANGE_WOOL: 0.25
+        MAGENTA_WOOL: 0.25
+        LIGHT_BLUE_WOOL: 0.25
+        YELLOW_WOOL: 0.25
+        LIME_WOOL: 0.25
+        PINK_WOOL: 0.25
+        GRAY_WOOL: 0.25
+        LIGHT_GRAY_WOOL: 0.25
+        CYAN_WOOL: 0.25
+        PURPLE_WOOL: 0.25
+        BLUE_WOOL: 0.25
+        BROWN_WOOL: 0.25
+        GREEN_WOOL: 0.25
+        RED_WOOL: 0.25
+        BLACK_WOOL: 0.25
+
+        WHITE_TERRACOTTA: 0.25
+        ORANGE_TERRACOTTA: 0.25
+        MAGENTA_TERRACOTTA: 0.25
+        LIGHT_BLUE_TERRACOTTA: 0.25
+        YELLOW_TERRACOTTA: 0.25
+        LIME_TERRACOTTA: 0.25
+        PINK_TERRACOTTA: 0.25
+        GRAY_TERRACOTTA: 0.25
+        LIGHT_GRAY_TERRACOTTA: 0.25
+        CYAN_TERRACOTTA: 0.25
+        PURPLE_TERRACOTTA: 0.25
+        BLUE_TERRACOTTA: 0.25
+        BROWN_TERRACOTTA: 0.25
+        GREEN_TERRACOTTA: 0.25
+        RED_TERRACOTTA: 0.25
+        BLACK_TERRACOTTA: 0.25
+
+        ORANGE_GLAZED_TERRACOTTA: 0.25
+        MAGENTA_GLAZED_TERRACOTTA: 0.25
+        LIGHT_BLUE_GLAZED_TERRACOTTA: 0.25
+        YELLOW_GLAZED_TERRACOTTA: 0.25
+        LIME_GLAZED_TERRACOTTA: 0.25
+        PINK_GLAZED_TERRACOTTA: 0.25
+        GRAY_GLAZED_TERRACOTTA: 0.25
+        LIGHT_GRAY_GLAZED_TERRACOTTA: 0.25
+        CYAN_GLAZED_TERRACOTTA: 0.25
+        PURPLE_GLAZED_TERRACOTTA: 0.25
+        BLUE_GLAZED_TERRACOTTA: 0.25
+        BROWN_GLAZED_TERRACOTTA: 0.25
+        GREEN_GLAZED_TERRACOTTA: 0.25
+        RED_GLAZED_TERRACOTTA: 0.25
+        BLACK_GLAZED_TERRACOTTA: 0.25
+
+        WHITE_STAINED_GLASS: 0.25
+        ORANGE_STAINED_GLASS: 0.25
+        MAGENTA_STAINED_GLASS: 0.25
+        LIGHT_BLUE_STAINED_GLASS: 0.25
+        YELLOW_STAINED_GLASS: 0.25
+        LIME_STAINED_GLASS: 0.25
+        PINK_STAINED_GLASS: 0.25
+        GRAY_STAINED_GLASS: 0.25
+        LIGHT_GRAY_STAINED_GLASS: 0.25
+        CYAN_STAINED_GLASS: 0.25
+        PURPLE_STAINED_GLASS: 0.25
+        BLUE_STAINED_GLASS: 0.25
+        BROWN_STAINED_GLASS: 0.25
+        GREEN_STAINED_GLASS: 0.25
+        RED_STAINED_GLASS: 0.25
+        BLACK_STAINED_GLASS: 0.25
+
+        WHITE_STAINED_GLASS_PANE: 0.25
+        ORANGE_STAINED_GLASS_PANE: 0.25
+        MAGENTA_STAINED_GLASS_PANE: 0.25
+        LIGHT_BLUE_STAINED_GLASS_PANE: 0.25
+        YELLOW_STAINED_GLASS_PANE: 0.25
+        LIME_STAINED_GLASS_PANE: 0.25
+        PINK_STAINED_GLASS_PANE: 0.25
+        GRAY_STAINED_GLASS_PANE: 0.25
+        LIGHT_GRAY_STAINED_GLASS_PANE: 0.25
+        CYAN_STAINED_GLASS_PANE: 0.25
+        PURPLE_STAINED_GLASS_PANE: 0.25
+        BLUE_STAINED_GLASS_PANE: 0.25
+        BROWN_STAINED_GLASS_PANE: 0.25
+        GREEN_STAINED_GLASS_PANE: 0.25
+        RED_STAINED_GLASS_PANE: 0.25
+        BLACK_STAINED_GLASS_PANE: 0.25
+
+        WHITE_SHULKER_BOX: 0.25
+        ORANGE_SHULKER_BOX: 0.25
+        MAGENTA_SHULKER_BOX: 0.25
+        LIGHT_BLUE_SHULKER_BOX: 0.25
+        YELLOW_SHULKER_BOX: 0.25
+        LIME_SHULKER_BOX: 0.25
+        PINK_SHULKER_BOX: 0.25
+        GRAY_SHULKER_BOX: 0.25
+        LIGHT_GRAY_SHULKER_BOX: 0.25
+        CYAN_SHULKER_BOX: 0.25
+        PURPLE_SHULKER_BOX: 0.25
+        BLUE_SHULKER_BOX: 0.25
+        BROWN_SHULKER_BOX: 0.25
+        GREEN_SHULKER_BOX: 0.25
+        RED_SHULKER_BOX: 0.25
+        BLACK_SHULKER_BOX: 0.25
+
+        ORANGE_BED: 0.25
+        MAGENTA_BED: 0.25
+        LIGHT_BLUE_BED: 0.25
+        YELLOW_BED: 0.25
+        LIME_BED: 0.25
+        PINK_BED: 0.25
+        GRAY_BED: 0.25
+        LIGHT_GRAY_BED: 0.25
+        CYAN_BED: 0.25
+        PURPLE_BED: 0.25
+        BLUE_BED: 0.25
+        BROWN_BED: 0.25
+        GREEN_BED: 0.25
+        RED_BED: 0.25
+        BLACK_BED: 0.25
+
+        ORANGE_CANDLE: 0.25
+        MAGENTA_CANDLE: 0.25
+        LIGHT_BLUE_CANDLE: 0.25
+        YELLOW_CANDLE: 0.25
+        LIME_CANDLE: 0.25
+        PINK_CANDLE: 0.25
+        GRAY_CANDLE: 0.25
+        LIGHT_GRAY_CANDLE: 0.25
+        CYAN_CANDLE: 0.25
+        PURPLE_CANDLE: 0.25
+        BLUE_CANDLE: 0.25
+        BROWN_CANDLE: 0.25
+        GREEN_CANDLE: 0.25
+        RED_CANDLE: 0.25
+        BLACK_CANDLE: 0.25
+
+        ORANGE_CANDLE_CAKE: 0.25
+        MAGENTA_CANDLE_CAKE: 0.25
+        LIGHT_BLUE_CANDLE_CAKE: 0.25
+        YELLOW_CANDLE_CAKE: 0.25
+        LIME_CANDLE_CAKE: 0.25
+        PINK_CANDLE_CAKE: 0.25
+        GRAY_CANDLE_CAKE: 0.25
+        LIGHT_GRAY_CANDLE_CAKE: 0.25
+        CYAN_CANDLE_CAKE: 0.25
+        PURPLE_CANDLE_CAKE: 0.25
+        BLUE_CANDLE_CAKE: 0.25
+        BROWN_CANDLE_CAKE: 0.25
+        GREEN_CANDLE_CAKE: 0.25
+        RED_CANDLE_CAKE: 0.25
+        BLACK_CANDLE_CAKE: 0.25
+
+        ORANGE_CONCRETE_POWDER: 0.25
+        MAGENTA_CONCRETE_POWDER: 0.25
+        LIGHT_BLUE_CONCRETE_POWDER: 0.25
+        YELLOW_CONCRETE_POWDER: 0.25
+        LIME_CONCRETE_POWDER: 0.25
+        PINK_CONCRETE_POWDER: 0.25
+        GRAY_CONCRETE_POWDER: 0.25
+        LIGHT_GRAY_CONCRETE_POWDER: 0.25
+        CYAN_CONCRETE_POWDER: 0.25
+        PURPLE_CONCRETE_POWDER: 0.25
+        BLUE_CONCRETE_POWDER: 0.25
+        BROWN_CONCRETE_POWDER: 0.25
+        GREEN_CONCRETE_POWDER: 0.25
+        RED_CONCRETE_POWDER: 0.25
+        BLACK_CONCRETE_POWDER: 0.25
+
+        ORANGE_CONCRETE: 0.25
+        MAGENTA_CONCRETE: 0.25
+        LIGHT_BLUE_CONCRETE: 0.25
+        YELLOW_CONCRETE: 0.25
+        LIME_CONCRETE: 0.25
+        PINK_CONCRETE: 0.25
+        GRAY_CONCRETE: 0.25
+        LIGHT_GRAY_CONCRETE: 0.25
+        CYAN_CONCRETE: 0.25
+        PURPLE_CONCRETE: 0.25
+        BLUE_CONCRETE: 0.25
+        BROWN_CONCRETE: 0.25
+        GREEN_CONCRETE: 0.25
+        RED_CONCRETE: 0.25
+        BLACK_CONCRETE: 0.25
+
+        ORANGE_CARPET: 0.25
+        MAGENTA_CARPET: 0.25
+        LIGHT_BLUE_CARPET: 0.25
+        YELLOW_CARPET: 0.25
+        LIME_CARPET: 0.25
+        PINK_CARPET: 0.25
+        GRAY_CARPET: 0.25
+        LIGHT_GRAY_CARPET: 0.25
+        CYAN_CARPET: 0.25
+        PURPLE_CARPET: 0.25
+        BLUE_CARPET: 0.25
+        BROWN_CARPET: 0.25
+        GREEN_CARPET: 0.25
+        RED_CARPET: 0.25
+        BLACK_CARPET: 0.25
+
+        ORANGE_BANNER: 0.25
+        MAGENTA_BANNER: 0.25
+        LIGHT_BLUE_BANNER: 0.25
+        YELLOW_BANNER: 0.25
+        LIME_BANNER: 0.25
+        PINK_BANNER: 0.25
+        GRAY_BANNER: 0.25
+        LIGHT_GRAY_BANNER: 0.25
+        CYAN_BANNER: 0.25
+        PURPLE_BANNER: 0.25
+        BLUE_BANNER: 0.25
+        BROWN_BANNER: 0.25
+        GREEN_BANNER: 0.25
+        RED_BANNER: 0.25
+        BLACK_BANNER: 0.25
+
+      entity:
+        # Invisible or completely useless
+        AREA_EFFECT_CLOUD: 0
+        BLOCK_DISPLAY: 0
+        ENDER_PEARL: 0
+        ENDER_SIGNAL: 0
+        FALLING_BLOCK: 0
+        INTERACTION: 0
+        LLAMA_SPIT: 0
+        MARKER: 0
+        TEXT_DISPLAY: 0
+        SPLASH_POTION: 0
+
+        # Very indifferent in most games, don't want arrows to be twice as common as other entities
+        ARROW: 0.5
+        SPECTRAL_ARROW: 0.5
+
+        # Instant damage
+        EVOKER_FANGS: 0.7
+        LIGHTNING: 0.5
+        PRIMED_TNT: 0.3
+
+        # Boss or particularly disruptive mobs
+        VEX: 0.5
+        BLAZE: 0.5
+        RAVAGER: 0.3
+        ELDER_GUARDIAN: 0.3
+        ENDER_DRAGON: 0.2 # Has no AI so doesn't actually damage, but destroys blocks and takes time to kill
+        WITHER: 0.2
+        WARDEN: 0.1
+
+      effect:
+        # Rarely useful in a void world
+        BAD_OMEN: 0
+        DOLPHINS_GRACE: 0.1
+        CONDUIT_POWER: 0.1
+        WATER_BREATHING: 0.1
+        HERO_OF_THE_VILLAGE: 0.1
+        LUCK: 0.1
+        UNLUCK: 0.1
+
+      structure: {}

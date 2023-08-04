@@ -3,13 +3,13 @@ package uk.co.hopperelec.mc.randomevents;
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.CommandHelp;
 import co.aikar.commands.annotation.*;
-import co.aikar.commands.bukkit.contexts.OnlinePlayer;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.hopperelec.mc.randomevents.eventtypes.RandomEventType;
 
 @CommandAlias("randomevents")
 @Description("Core command for RandomEvents")
@@ -21,14 +21,14 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("start")
     @Description("Start the game!")
-    public void onStart(@NotNull RandomEventsGame game, @Default("30") @Name("delay") TimeInSeconds delay) {
-        game.setDelay(delay);
+    public void onStart(@NotNull RandomEventsGame game, @Optional TimeInSeconds countdownLength) {
+        if (countdownLength != null) game.setCountdownLength(countdownLength);
         game.start();
     }
 
     @Subcommand("stop")
     @Description("Stops an ongoing game")
-    public void onStop(@NotNull RandomEventsGame game, CommandSender sender) {
+    public void onStop(@NotNull RandomEventsGame game, @NotNull CommandSender sender) {
         if (game.isOngoing()) {
             game.stop();
         } else {
@@ -38,6 +38,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("trigger")
     @Description("Triggers an event")
+    @CommandCompletion("@randomeventtypes")
     public void onTrigger(@NotNull RandomEventsGame game, @Optional @Name("type") RandomEventType randomEventType) {
         if (randomEventType == null) {
             game.doRandomEvent();
@@ -48,15 +49,16 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("triggerplayer")
     @Description("Triggers an event on a given player")
-    public void onTriggerPlayer(@NotNull RandomEventsGame game, @Name("player") OnlinePlayer player, @Optional @Name("type") RandomEventType randomEventType) {
+    @CommandCompletion("@players @randomeventtypes")
+    public void onTriggerPlayer(@NotNull RandomEventsGame game, @Name("player") RandomEventsPlayer player, @Optional @Name("type") RandomEventType randomEventType) {
         if (randomEventType == null) {
-            game.doRandomEvent(player.getPlayer());
+            game.doRandomEvent(player);
         } else {
-            game.doRandomEvent(player.getPlayer(), randomEventType);
+            game.doRandomEvent(player, randomEventType);
         }
     }
 
-    private @Nullable Object getSeedFromName(CommandSender sender, String name) {
+    private @Nullable Object getSeedFromName(@NotNull CommandSender sender, @NotNull String name) {
         name = name.toUpperCase();
         final Material material = Material.getMaterial(name);
         if (material != null) {
@@ -74,7 +76,7 @@ public class RandomEventsCommands extends BaseCommand {
         return null;
     }
 
-    private void listDrops(@NotNull RandomEventsGame game, CommandSender sender, @Nullable Object seed) {
+    private void listDrops(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Nullable Object seed) {
         if (seed == null) {
             sender.sendMessage("The item in your hand does not drop items!");
         } else if (game.isLearned(seed)) {
@@ -86,7 +88,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("listdrops")
     @Description("Lists the drops of the block or entity name given or in your hand")
-    public void onListDrops(@NotNull RandomEventsGame game, CommandSender sender, @Optional @Name("name") String name) {
+    public void onListDrops(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Optional @Name("name") String name) {
         if (name == null) {
             if (sender instanceof Player player) {
                 listDrops(game, sender, game.getSeedFor(player.getInventory().getItemInMainHand()));
@@ -100,7 +102,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("learn")
     @Description("Learn the drops of the given block or entity name to deobfuscate them in the drops list")
-    public void onLearn(@NotNull RandomEventsGame game, CommandSender sender, @Name("name") String name) {
+    public void onLearn(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @NotNull @Name("name") String name) {
         final Object seed = getSeedFromName(sender, name);
         if (seed != null) {
             game.learn(seed);
@@ -110,7 +112,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("unlearn")
     @Description("Unlearn the drops of the given block or entity name to reobfuscate them in the drops list")
-    public void onUnlearn(@NotNull RandomEventsGame game, CommandSender sender, @Name("name") String name) {
+    public void onUnlearn(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @NotNull @Name("name") String name) {
         final Object seed = getSeedFromName(sender, name);
         if (seed != null) {
             game.unlearn(seed);
@@ -120,7 +122,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("seed")
     @Description("View the seed used to generate the random block and entity drops")
-    public void onSeed(@NotNull RandomEventsGame game, CommandSender sender) {
+    public void onSeed(@NotNull RandomEventsGame game, @NotNull CommandSender sender) {
         sender.sendMessage(Long.toString(game.getLootSeed()));
     }
 
@@ -129,20 +131,20 @@ public class RandomEventsCommands extends BaseCommand {
     public class RandomEventsToggleCommands extends BaseCommand {
         @Subcommand("learning")
         public void onToggleLearning(@NotNull RandomEventsGame game) {
-            game.toggleRequireLearnItems();
+            game.toggleRequireLearning();
         }
     }
 
     @Subcommand("set")
     @Description("Set configuration options for an upcoming or ongoing game")
     public class RandomEventsSetCommands extends BaseCommand {
-        @Subcommand("delay")
-        public void onSetDelay(@NotNull RandomEventsGame game, @Name("delay") TimeInSeconds delay) {
-            game.setDelay(delay);
+        @Subcommand("countdownLength")
+        public void onSetCountdownLength(@NotNull RandomEventsGame game, @NotNull @Name("countdownLength") TimeInSeconds countdownLength) {
+            game.setCountdownLength(countdownLength);
         }
         @Subcommand("learning")
         public void onSetLearning(@NotNull RandomEventsGame game, @Name("value") boolean value) {
-            game.setRequireLearnItems(value);
+            game.setRequireLearning(value);
         }
         @Subcommand("seed")
         public void onSetSeed(@NotNull RandomEventsGame game, @Name("seed") long seed) {

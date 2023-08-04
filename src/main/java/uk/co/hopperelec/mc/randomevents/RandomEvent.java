@@ -5,17 +5,15 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-public class RandomEvent extends Event implements Cancellable {
+public abstract sealed class RandomEvent extends Event implements Cancellable permits MonoMetricRandomEvent,PolyMetricRandomEvent {
     @NotNull private static final HandlerList HANDLER_LIST = new HandlerList();
     private boolean cancelled = false;
     public final RandomEventsGame game;
     @NotNull public final RandomEventsPlayer player;
-    @NotNull public RandomEventType type;
 
-    public RandomEvent(RandomEventsGame game, @NotNull RandomEventsPlayer player, @NotNull RandomEventType type) {
+    public RandomEvent(RandomEventsGame game, @NotNull RandomEventsPlayer player) {
         this.game = game;
         this.player = player;
-        this.type = type;
     }
 
     @Override

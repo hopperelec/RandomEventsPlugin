@@ -1,23 +1,9 @@
 package uk.co.hopperelec.mc.randomevents;
 
-import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.block.Mirror;
-import net.minecraft.world.level.block.Rotation;
-import net.minecraft.world.level.levelgen.structure.templatesystem.*;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
-import org.bukkit.craftbukkit.v1_20_R1.CraftWorld;
-import org.bukkit.entity.Damageable;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -26,48 +12,49 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SpawnEggMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.hopperelec.mc.randomevents.config.RandomEventScope;
+import uk.co.hopperelec.mc.randomevents.config.RandomEventWeightPreset;
+import uk.co.hopperelec.mc.randomevents.config.RandomEventsGameConfig;
+import uk.co.hopperelec.mc.randomevents.countdowns.*;
+import uk.co.hopperelec.mc.randomevents.eventtypes.MonoMetricRandomEventType;
+import uk.co.hopperelec.mc.randomevents.eventtypes.PolyMetricRandomEventType;
+import uk.co.hopperelec.mc.randomevents.eventtypes.RandomEventType;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 import static net.kyori.adventure.text.format.TextDecoration.*;
-import static org.bukkit.Sound.*;
 import static uk.co.hopperelec.mc.randomevents.RandomEventsPlayer.getRandomEventsPlayer;
 
 public class RandomEventsGame {
-    private int bossBarTaskId = -1;
     @NotNull private final RandomEventsPlugin plugin;
-    @NotNull private final BossBar bossBar = Bukkit.createBossBar("Next event:", BarColor.YELLOW, BarStyle.SOLID);
-    @NotNull private final TimeInSeconds countdown = new TimeInSeconds();
-    @NotNull private final TimeInSeconds delay = new TimeInSeconds();
-    @NotNull private final Random eventRandomizer = new Random();
-    private long lootSeed = new Random().nextLong();
-    public final static short TELEPORT_SEARCH_RADIUS = 32;
+    private final RandomEventsGameConfig config;
+    private final BukkitSecondCountdown countdown;
+    public RandomEventWeightPreset weightPreset;
     @NotNull public final static TextComponent LORE_PREFIX = Component.text("Drops: ", YELLOW, BOLD).decoration(ITALIC, false);
     @NotNull public final static TextComponent UNKNOWN_DROP_TEXT = LORE_PREFIX.append(Component.text("Unknown").decoration(OBFUSCATED, true));
-    @NotNull private final static Set<RandomEventsPlayer> players = new HashSet<>();
+    @NotNull private final Set<RandomEventsPlayer> players = new HashSet<>();
     @NotNull private final Set<Object> learnedDropSeeds = new HashSet<>();
     @NotNull private final Map<Object,Set<ItemStack>> itemsWithLore = new HashMap<>();
-    private boolean requireLearnItems = false;
 
-    public RandomEventsGame(@NotNull RandomEventsPlugin plugin) {
+    public RandomEventsGame(@NotNull RandomEventsPlugin plugin, @NotNull RandomEventsGameConfig config) {
+        if (config.lootSeed == -1) config.lootSeed = new Random().nextLong();
         this.plugin = plugin;
-        bossBar.setVisible(false);
+        this.config = config;
+        if (!setWeightPreset(config.weightPresetName)) throw new IllegalArgumentException("Tried to set a game config which contains the name of a weight preset which does not exist!");
+        this.countdown = switch(plugin.config.countdownLocation()) {
+            case NONE -> new BukkitSecondCountdown(config.countdownLength, plugin, this::doRandomEvent);
+            case BOSSBAR -> new BukkitBossBarCountdown(config.countdownLength, plugin, this::doRandomEvent);
+            case SIDEBAR -> new BukkitSidebarCountdown(config.countdownLength, plugin, this::doRandomEvent);
+            case ACTION_BAR -> new BukkitActionBarCountdown(config.countdownLength, plugin, this::doRandomEvent);
+        };
     }
 
     public void start() {
-        if (isOngoing()) {
-            plugin.getServer().getScheduler().cancelTask(bossBarTaskId);
-        }
-        bossBar.setVisible(true);
-        countdown.set(delay);
-        bossBarTaskId = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, this::progressCountdown, 20L, 20L);
+        countdown.reset();
+        countdown.start();
         addLoreToPlayers();
     }
 
@@ -75,171 +62,100 @@ public class RandomEventsGame {
         if (!isOngoing()) {
             throw new IllegalStateException("Tried to stop a game which isn't ongoing");
         }
-        bossBar.setVisible(false);
-        countdown.set(0);
-        plugin.getServer().getScheduler().cancelTask(bossBarTaskId);
-        bossBarTaskId = -1;
+        countdown.pause();
         removeLoreFromPlayers();
         clearPotionEffects();
     }
 
-    public void progressCountdown() {
-        if (countdown.asInt() <= 1) {
-            countdown.set(delay);
-            doRandomEvent();
-        } else {
-            countdown.decrement();
-        }
-        bossBar.setProgress(countdown.dividedBy(delay));
+    public boolean isOngoing() {
+        return countdown.isOngoing();
     }
 
 
     public void doRandomEvent() {
-        for (RandomEventsPlayer player : players) {
-            doRandomEvent(player);
+        clearPotionEffects();
+        if (config.shareScope == RandomEventScope.NONE) {
+            for (RandomEventsPlayer player : players) {
+                doRandomEvent(player);
+            }
+        } else {
+            final RandomEventType randomEventType = plugin.chooseRandomEvent(weightPreset);
+            for (RandomEventsPlayer player : players) {
+                doRandomEvent(player, randomEventType);
+            }
         }
     }
     public void doRandomEvent(@NotNull RandomEventType randomEventType) {
-        for (RandomEventsPlayer player : players) {
-            doRandomEvent(player, randomEventType);
-        }
-    }
-    public void doRandomEvent(@NotNull Player player) {
-        doRandomEvent(getRandomEventsPlayer(player));
-    }
-    public void doRandomEvent(@NotNull RandomEventsPlayer player) {
-        doRandomEvent(player, getRandomFrom(RandomEventType.values(), eventRandomizer));
-    }
-    public void doRandomEvent(@NotNull Player player, @NotNull RandomEventType randomEventType) {
-        doRandomEvent(getRandomEventsPlayer(player), randomEventType);
-    }
-    public void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull RandomEventType randomEventType) {
-        final RandomEvent randomEvent = new RandomEvent(this, player, randomEventType);
-        randomEvent.callEvent();
-        if (!randomEvent.isCancelled()) {
-            doRandomEvent(randomEvent);
-        }
-    }
-    public void doRandomEvent(@NotNull RandomEvent randomEvent) {
-        switch (randomEvent.type) {
-            case BLOCK -> {
-                final Material material = getRandomWhich(Material.values(), Material::isBlock, eventRandomizer);
-                randomEvent.player.setBlock(material);
-                randomEvent.player.sendMessage("Placed a "+material);
-                randomEvent.player.playSound(Sound.sound(BLOCK_STONE_PLACE, Sound.Source.PLAYER, .6f, 1f));
-            }
-            case ITEM -> {
-                final Material material = getRandomWhich(Material.values(), i -> i.isItem() && i.isEnabledByFeature(randomEvent.player.getWorld()) && !i.isLegacy(), eventRandomizer);
-                final ItemStack itemStack = new ItemStack(material);
-                if (itemStack.getItemMeta() instanceof Damageable damageable) {
-                    damageable.setHealth(eventRandomizer.nextInt(material.getMaxDurability())+1);
-                }
-                addLoreTo(itemStack);
-                randomEvent.player.giveItem(itemStack);
-                randomEvent.player.sendMessage("Given you "+material);
-                randomEvent.player.playSound(Sound.sound(ENTITY_ITEM_PICKUP, Sound.Source.PLAYER, .3f, 1f));
-            }
-            case ENTITY -> {
-                final EntityType entityType = getRandomWhich(EntityType.values(), e -> e.isSpawnable() && e.isEnabledByFeature(randomEvent.player.getWorld()), eventRandomizer);
-                randomEvent.player.spawnEntity(entityType);
-                randomEvent.player.sendMessage("Spawned a "+entityType);
-                randomEvent.player.playSound(Sound.sound(ENTITY_GENERIC_SMALL_FALL, Sound.Source.PLAYER, .3f, 1f));
-            }
-            case TELEPORT -> {
-                final Location location = getRandomSafeLocationNear(randomEvent.player.getLocation());
-                if (location == null) {
-                    randomEvent.player.sendMessage("Tried to teleport you, but couldn't find a suitable location close enough!");
-                } else {
-                    randomEvent.player.teleport(location);
-                    randomEvent.player.sendMessage("Teleported!");
-                    randomEvent.player.playSound(Sound.sound(ENTITY_ENDERMAN_TELEPORT, Sound.Source.PLAYER, .6f, 1f));
-                }
-            }
-            case EFFECT -> {
-                final PotionEffectType potionEffectType = getRandomFrom(PotionEffectType.values(), eventRandomizer);
-                final int amplifier = eventRandomizer.nextInt(5)+1;
-                final PotionEffect potionEffect = new PotionEffect(potionEffectType, delay.asInt()*20, amplifier);
-                randomEvent.player.setPotionEffect(potionEffect);
-                randomEvent.player.sendMessage("Effected you with "+potionEffectType.getName()+" "+amplifier);
-                randomEvent.player.playSound(Sound.sound(ENTITY_GENERIC_DRINK, Sound.Source.PLAYER, .6f, 1f));
-            }
-            case STRUCTURE -> {
-                final ServerLevel nmsWorld = ((CraftWorld) randomEvent.player.getWorld()).getHandle();
-                final StructureTemplateManager structureTemplateManager = nmsWorld.getStructureManager();
-                final ResourceLocation structureKey = getRandomWhich(
-                        structureTemplateManager.listTemplates().toArray(ResourceLocation[]::new),
-                        key -> key.getNamespace().equals(ResourceLocation.DEFAULT_NAMESPACE),
-                        eventRandomizer
-                );
-                structureTemplateManager.get(structureKey).ifPresentOrElse(
-                        structureTemplate -> {
-                            final Location loc = randomEvent.player.getLocation();
-                            final BlockPos blockPos = BlockPos.containing(loc.x(), loc.y(), loc.z());
-                            final float integrity = eventRandomizer.nextFloat()+Float.MIN_NORMAL;
-                            structureTemplate.placeInWorld(nmsWorld, blockPos, blockPos,
-                                    new StructurePlaceSettings()
-                                            .addProcessor(new BlockRotProcessor(integrity))
-                                            .addProcessor(JigsawReplacementProcessor.INSTANCE)
-                                            .addProcessor(BlockIgnoreProcessor.STRUCTURE_AND_AIR)
-                                            .setMirror(getRandomFrom(Mirror.values(), eventRandomizer))
-                                            .setRotation(getRandomFrom(Rotation.values(), eventRandomizer)),
-                                    RandomSource.create(), 2
-                            );
-                            randomEvent.player.sendMessage("Placed a "+structureKey.getPath()+" with "+Math.round(integrity*1000)/10f+"% integrity");
-                            randomEvent.player.playSound(Sound.sound(BLOCK_WOOD_PLACE, Sound.Source.PLAYER, 1f, 1f));
-                        },
-                        () -> randomEvent.player.sendMessage("Tried to place structure "+structureKey+" but could not find it")
-                );
+        if (randomEventType instanceof PolyMetricRandomEventType<?> pRET) {
+            doRandomEvent(pRET);
+        } else {
+            for (RandomEventsPlayer player : players) {
+                doRandomEvent(player, randomEventType);
             }
         }
     }
-
-    public @Nullable Location getRandomSafeLocationNear(@NotNull Location location) {
-        final int minX = location.getBlockX()-TELEPORT_SEARCH_RADIUS;
-        final int maxX = location.getBlockX()+TELEPORT_SEARCH_RADIUS;
-        final int minZ = location.getBlockZ()-TELEPORT_SEARCH_RADIUS;
-        final int maxZ = location.getBlockZ()+TELEPORT_SEARCH_RADIUS;
-        final int minY = location.getWorld().getMinHeight();
-        final List<Vector> safeLocations = new ArrayList<>();
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                final int maxY = location.getWorld().getHighestBlockYAt(x, z);
-                if (maxY != minY-1) {
-                    safeLocations.add(new Vector(x, maxY+1, z));
-                    int y = minY;
-                    while (y < maxY) {
-                        if (!location.getWorld().getBlockAt(x, y, z).isSolid() && location.getWorld().getBlockAt(x, y-1, z).isSolid()) {
-                            safeLocations.add(new Vector(x, y, z));
-                            y++;
-                        }
-                        y++;
+    public <M> void doRandomEvent(@NotNull PolyMetricRandomEventType<M> randomEventType) {
+        if (config.shareScope == RandomEventScope.ALL) {
+            final List<M> metrics = new ArrayList<>();
+            for (RandomEventsPlayer player : players) {
+                M metric = null;
+                for (M pastMetric : metrics) {
+                    if (randomEventType.isValidMetric(pastMetric, player)) {
+                        metric = pastMetric;
+                        break;
                     }
                 }
+                if (metric == null) {
+                    metric = randomEventType.getRandomMetricFor(player);
+                    metrics.add(metric);
+                }
+                doRandomEvent(player, randomEventType, metric);
+            }
+        } else {
+            for (RandomEventsPlayer player : players) {
+                doRandomEvent(player, randomEventType);
             }
         }
-        if (safeLocations.size() != 0) {
-            final Vector safeLocation = safeLocations.get(eventRandomizer.nextInt(safeLocations.size()));
-            return location.set(safeLocation.getX(), safeLocation.getY(), safeLocation.getZ());
+    }
+    public void doRandomEvent(@NotNull RandomEventsPlayer player) {
+        doRandomEvent(player, plugin.chooseRandomEvent(weightPreset));
+    }
+    public void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull RandomEventType randomEventType) {
+        if (randomEventType instanceof MonoMetricRandomEventType mRET) {
+            doRandomEvent(player, mRET);
+        } else if (randomEventType instanceof PolyMetricRandomEventType<?> pRET) {
+            doRandomEvent(player, pRET);
+        } else {
+            throw new IllegalStateException("Sealed class RandomEventType should only be MonoMetric or PolyMetric but is somehow neither");
         }
-        return null;
+    }
+    public void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull MonoMetricRandomEventType randomEventType) {
+        final MonoMetricRandomEvent event = new MonoMetricRandomEvent(this, player, randomEventType);
+        if (event.callEvent()) {
+            if (event.type.execute(player)) {
+                event.type.success(player);
+            }
+        }
+    }
+    public <M> void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull PolyMetricRandomEventType<M> randomEventType) {
+        doRandomEvent(player, randomEventType, randomEventType.getRandomMetricFor(player));
+    }
+    public <M> void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull PolyMetricRandomEventType<M> type, M metric) {
+        final PolyMetricRandomEvent<M> event = new PolyMetricRandomEvent<>(this, player, type, metric);
+        if (event.callEvent()) {
+            if (event.type.execute(player, metric)) {
+                event.type.success(player, metric);
+            }
+        }
     }
 
 
-    private <T> T getRandomFrom(@NotNull T @NotNull [] array, @NotNull Random random) {
-        return array[random.nextInt(array.length)];
-    }
-    private <T> T getRandomWhich(@NotNull T @NotNull [] array, @NotNull Predicate<T> which, @NotNull Random random) {
+    private @NotNull Material getNewDropFor(@NotNull Object seed) {
+        final Random random = new Random(config.lootSeed + seed.hashCode());
         while (true) {
-            final T option = getRandomFrom(array, random);
-            if (which.test(option)) {
-                return option;
-            }
+            final Material newDrop = Material.values()[random.nextInt(Material.values().length)];
+            if (newDrop.isItem()) return newDrop;
         }
-    }
-
-
-    private Material getNewDropFor(@NotNull Object seed) {
-        return getRandomWhich(Material.values(), Material::isItem, new Random(lootSeed + seed.hashCode()));
     }
     public List<ItemStack> getNewDropsFor(Object seed) {
         final List<ItemStack> newDroppedItems = new ArrayList<>();
@@ -356,7 +272,7 @@ public class RandomEventsGame {
 
     public void handleLoreFor(@Nullable ItemStack itemStack) {
         if (itemStack != null) {
-            if (isOngoing()) {
+            if (currentlyDisplayingLore()) {
                 addLoreTo(itemStack);
             } else {
                 removeLoreFrom(itemStack);
@@ -364,23 +280,19 @@ public class RandomEventsGame {
         }
     }
     public void handleLoreFor(@NotNull Inventory inventory) {
-        if (isOngoing()) {
+        if (currentlyDisplayingLore()) {
             addLoreTo(inventory);
         } else {
             removeLoreFrom(inventory);
         }
     }
     public void handleLoreFor(@NotNull InventoryHolder inventoryHolder) {
-        if (isOngoing()) {
-            addLoreTo(inventoryHolder);
-        } else {
-            removeLoreFrom(inventoryHolder);
-        }
+        handleLoreFor(inventoryHolder.getInventory());
     }
 
     public void resetLoreFor(@NotNull ItemStack itemStack) {
         removeLoreFrom(itemStack);
-        if (isOngoing()) addLoreTo(itemStack);
+        if (currentlyDisplayingLore()) addLoreTo(itemStack);
     }
     public void resetLore() {
         for (Set<ItemStack> items : itemsWithLore.values()) {
@@ -397,8 +309,10 @@ public class RandomEventsGame {
 
     public void learn(@NotNull Object seed) {
         if (learnedDropSeeds.add(seed)) {
-            for (RandomEventsPlayer player : players) {
-                player.playSound(Sound.sound(BLOCK_ENCHANTMENT_TABLE_USE, Sound.Source.PLAYER, .3f, 1f));
+            if (plugin.config.learnDropSoundEffect() != null) {
+                for (RandomEventsPlayer player : players) {
+                    player.playSound(plugin.config.learnDropSoundEffect());
+                }
             }
             if (itemsWithLore.containsKey(seed)) {
                 for (ItemStack itemStack : itemsWithLore.get(seed)) {
@@ -415,27 +329,21 @@ public class RandomEventsGame {
         }
     }
 
-    public boolean doesRequireLearnItems() {
-        return requireLearnItems;
+    public boolean doesRequireLearning() {
+        return config.requireLearning;
     }
-    public void setRequireLearnItems(boolean requireLearnItems) {
-        if (requireLearnItems != this.requireLearnItems)
-            toggleRequireLearnItems();
+    public void setRequireLearning(boolean requireLearning) {
+        if (config.requireLearning == requireLearning) return;
+        toggleRequireLearning();
     }
-    public void toggleRequireLearnItems() {
-        requireLearnItems = !requireLearnItems;
-        if (isOngoing()) resetLore();
+    public void toggleRequireLearning() {
+        config.requireLearning = !config.requireLearning;
+        if (currentlyDisplayingLore()) resetLore();
     }
 
-
-    public void clearPotionEffects() {
-        for (RandomEventsPlayer player : players) {
-            player.clearPotionEffect();
-        }
-    }
 
     public boolean hasPlayer(@NotNull Player player) {
-        return hasPlayer(getRandomEventsPlayer(player));
+        return hasPlayer(getRandomEventsPlayer(player, this));
     }
     public boolean hasPlayer(@NotNull RandomEventsPlayer player) {
         return players.contains(player);
@@ -446,46 +354,78 @@ public class RandomEventsGame {
     }
 
     public void joinPlayer(@NotNull Player player) {
-        bossBar.addPlayer(player);
-        players.add(getRandomEventsPlayer(player));
+        if (countdown instanceof BukkitVisibleSecondCountdown visibleCountdown) {
+            visibleCountdown.addPlayer(player);
+        }
+        players.add(getRandomEventsPlayer(player, this));
         handleLoreFor(player);
     }
 
     public void removePlayer(@NotNull Player player) {
-        bossBar.removePlayer(player);
-        players.remove(getRandomEventsPlayer(player));
+        if (countdown instanceof BukkitVisibleSecondCountdown visibleCountdown) {
+            visibleCountdown.removePlayer(player);
+        }
+        players.remove(getRandomEventsPlayer(player, this));
         removeLoreFrom(player);
     }
 
-    public boolean isOngoing() {
-        return bossBarTaskId != -1;
-    }
-
-    public @NotNull TimeInSeconds getDelay() {
-        return delay;
-    }
-    public void setDelay(@NotNull TimeInSeconds newDelay) {
-        delay.set(newDelay);
-        if (countdown.moreThan(newDelay)) {
-            countdown.set(newDelay);
+    public void clearPotionEffects() {
+        for (RandomEventsPlayer player : players) {
+            player.clearPotionEffect();
         }
     }
 
-    public @NotNull TimeInSeconds getCountdown() {
-        return countdown;
+
+    public @NotNull TimeInSeconds getCountdownLength() {
+        return countdown.getLength();
     }
-    public void setCountdown(@NotNull TimeInSeconds newCountdown) {
-        if (newCountdown.moreThan(delay)) {
-            throw new IllegalArgumentException("Can not set countdown to higher than delay!");
-        }
-        countdown.set(newCountdown);
+    public void setCountdownLength(@NotNull TimeInSeconds newLength) {
+        config.countdownLength = newLength;
+        countdown.setLength(newLength);
+    }
+
+    public @NotNull TimeInSeconds getTimeTillNextEvent() {
+        return countdown.getTimeRemaining();
+    }
+    public void setTimeTillNextEvent(@NotNull TimeInSeconds newTimeRemaining) {
+        countdown.setTimeRemaining(newTimeRemaining);
     }
 
     public long getLootSeed() {
-        return lootSeed;
+        return config.lootSeed;
     }
     public void setLootSeed(long seed) {
-        lootSeed = seed;
+        config.lootSeed = seed;
         // resetLore();
+    }
+    
+    public boolean doesDisplayLore() {
+        return config.displayLore;
+    }
+    public void setDisplayLore(boolean displayLore) {
+        if (config.displayLore == displayLore) return;
+        config.displayLore = displayLore;
+        if (isOngoing()) {
+            if (displayLore) addLoreToPlayers();
+            else removeLoreFromPlayers();
+        }
+    }
+    public boolean currentlyDisplayingLore() {
+        return doesDisplayLore() && isOngoing();
+    }
+
+    public RandomEventScope getShareScope() {
+        return config.shareScope;
+    }
+    public void setShareScope(@NotNull RandomEventScope scope) {
+        config.shareScope = scope;
+    }
+
+    public boolean setWeightPreset(String name) {
+        final RandomEventWeightPreset weightPreset = plugin.config.weightPresets().get(name);
+        if (weightPreset == null) return false;
+        config.weightPresetName = name;
+        this.weightPreset = weightPreset;
+        return true;
     }
 }

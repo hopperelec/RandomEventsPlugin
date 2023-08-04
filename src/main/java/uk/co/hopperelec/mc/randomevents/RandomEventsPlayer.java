@@ -19,20 +19,22 @@ import java.util.Set;
 
 public class RandomEventsPlayer implements InventoryHolder {
     @NotNull private final Player spigotPlayer;
+    @NotNull public final RandomEventsGame game;
     @Nullable private PotionEffectType lastPotionEffect;
     @NotNull private static final Set<RandomEventsPlayer> allPlayers = new HashSet<>();
 
-    private RandomEventsPlayer(@NotNull Player spigotPlayer) {
+    private RandomEventsPlayer(@NotNull Player spigotPlayer, @NotNull RandomEventsGame game) {
         this.spigotPlayer = spigotPlayer;
+        this.game = game;
     }
 
-    public static @NotNull RandomEventsPlayer getRandomEventsPlayer(@NotNull Player spigotPlayer) {
+    public static @NotNull RandomEventsPlayer getRandomEventsPlayer(@NotNull Player spigotPlayer, @NotNull RandomEventsGame game) {
         for (RandomEventsPlayer randomEventsPlayer : allPlayers) {
-            if (randomEventsPlayer.spigotPlayer == spigotPlayer) {
+            if (randomEventsPlayer.spigotPlayer.equals(spigotPlayer)) {
                 return randomEventsPlayer;
             }
         }
-        final RandomEventsPlayer randomEventsPlayer = new RandomEventsPlayer(spigotPlayer);
+        final RandomEventsPlayer randomEventsPlayer = new RandomEventsPlayer(spigotPlayer, game);
         allPlayers.add(randomEventsPlayer);
         return randomEventsPlayer;
     }

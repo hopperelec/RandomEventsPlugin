@@ -1,6 +1,17 @@
 package uk.co.hopperelec.mc.randomevents;
 
+import co.aikar.commands.InvalidCommandArgument;
+import co.aikar.commands.MessageKeys;
 import co.aikar.commands.PaperCommandManager;
+import co.aikar.commands.bukkit.contexts.OnlinePlayer;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -23,31 +34,145 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
+import uk.co.hopperelec.mc.randomevents.config.RandomEventWeightPreset;
+import uk.co.hopperelec.mc.randomevents.config.RandomEventsConfig;
+import uk.co.hopperelec.mc.randomevents.config.RandomEventsGameConfig;
+import uk.co.hopperelec.mc.randomevents.eventtypes.*;
 
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+
+import static com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE;
+import static uk.co.hopperelec.mc.randomevents.RandomEventsPlayer.getRandomEventsPlayer;
 
 public class RandomEventsPlugin extends JavaPlugin implements Listener {
-    private final RandomEventsGame game = new RandomEventsGame(this);
+    private RandomEventsGame game;
+    public RandomEventsConfig config;
+    @NotNull public final BiMap<String,RandomEventType> registeredEventTypes = HashBiMap.create();
+    @NotNull public final Random random = new Random();
     private boolean processingEvent = false;
     public final NamespacedKey ITEM_LORE_HASH_KEY = new NamespacedKey(this, "lore-hash");
 
-    @Override
-    public void onEnable() {
-        getServer().getPluginManager().registerEvents(this, this);
+
+    public <T> T getRandomFrom(@NotNull T @NotNull [] array) {
+        return array[random.nextInt(array.length)];
+    }
+
+    public <M> M chooseRandom(@NotNull Collection<M> possibleValues, @NotNull Map<M,Float> weights) {
+        double totalWeight = 0;
+        for (M possibleValue : possibleValues) {
+            final Float weight = weights.get(possibleValue);
+            totalWeight += weight == null ? 1 : weight;
+        }
+        final double randomValue = random.nextDouble(totalWeight);
+        double acc = 0;
+        for (M possibleValue : possibleValues) {
+            final Float weight = weights.get(possibleValue);
+            acc += weight == null ? 1 : weight;
+            if (acc > randomValue) return possibleValue;
+        }
+        return null;
+    }
+
+    public @NotNull RandomEventType chooseRandomEvent(@NotNull RandomEventWeightPreset weightPreset) {
+        final Map<RandomEventType,Float> weights = new HashMap<>();
+        for (Map.Entry<String,Float> weightByName : weightPreset.eventTypes().entrySet()) {
+            weights.put(registeredEventTypes.get(weightByName.getKey()), weightByName.getValue());
+        }
+        return chooseRandom(registeredEventTypes.values(), weights);
+    }
+
+
+    private @NotNull File getConfigFile() {
+        saveDefaultConfig();
+        return new File(getDataFolder(), "config.yml");
+    }
+
+    private @NotNull RandomEventsConfig getRandomEventsConfig(File configFile) throws IOException {
+        final ObjectMapper configMapper = YAMLMapper.builder()
+                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+                .build()
+                .setPropertyNamingStrategy(SNAKE_CASE)
+                .registerModule(new GuavaModule());
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(Sound.class, new JsonDeserializer<>() {
+            @Override
+            public Sound deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                final JsonNode node = p.getCodec().readTree(p);
+                return Sound.sound(
+                        org.bukkit.Sound.valueOf(node.get("sound").asText()),
+                        Sound.Source.PLAYER,
+                        node.get("volume").floatValue(),
+                        node.get("pitch").floatValue()
+                );
+            }
+        });
+        module.addKeyDeserializer(PotionEffectType.class, new KeyDeserializer() {
+            @Override
+            public Object deserializeKey(String key, DeserializationContext ctxt) {
+                return PotionEffectType.getByName(key);
+            }
+        });
+        module.addDeserializer(TimeInSeconds.class, new JsonDeserializer<>() {
+            @Override
+            public TimeInSeconds deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                return new TimeInSeconds(p.getIntValue());
+            }
+        });
+        configMapper.registerModule(module);
+        return configMapper.readValue(configFile, RandomEventsConfig.class);
+    }
+
+    private void registerCommands() {
         final PaperCommandManager manager = new PaperCommandManager(this);
         manager.enableUnstableAPI("help");
         manager.getCommandContexts().registerContext(TimeInSeconds.class, c ->
                 new TimeInSeconds((int) manager.getCommandContexts().getResolver(int.class).getContext(c))
         );
+        manager.getCommandContexts().registerContext(RandomEventType.class, c -> {
+                final RandomEventType match = registeredEventTypes.get(c.popFirstArg().toLowerCase());
+                if (match == null) throw new InvalidCommandArgument(MessageKeys.PLEASE_SPECIFY_ONE_OF, "{valid}", String.join(", ",registeredEventTypes.keySet()));
+                return match;
+            }
+        );
+        manager.getCommandContexts().registerContext(RandomEventsPlayer.class, c ->
+                getRandomEventsPlayer(((OnlinePlayer) manager.getCommandContexts().getResolver(OnlinePlayer.class).getContext(c)).player, game)
+        );
         manager.getCommandContexts().registerIssuerOnlyContext(RandomEventsGame.class, c -> game);
+        manager.getCommandCompletions().registerCompletion("randomeventtypes", c -> registeredEventTypes.keySet());
         manager.registerCommand(new RandomEventsCommands());
+    }
+
+    private void registerDefaultEventTypes() {
+        registeredEventTypes.put("block", new RandomBlockEvent(this));
+        registeredEventTypes.put("item", new RandomItemEvent(this));
+        registeredEventTypes.put("entity", new RandomEntityEvent(this));
+        registeredEventTypes.put("effect", new RandomEffectEvent(this));
+        registeredEventTypes.put("teleport", new RandomTeleportEvent(this));
+        registeredEventTypes.put("structure", new RandomStructureEvent(this));
+    }
+
+    @Override
+    public void onEnable() {
+        registerDefaultEventTypes();
+        try {
+            config = getRandomEventsConfig(getConfigFile());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to deserialize config file; is it formatted correctly?", e);
+        }
+        game = new RandomEventsGame(this, new RandomEventsGameConfig(config.defaultGameConfig()));
+        getServer().getPluginManager().registerEvents(this, this);
+        registerCommands();
     }
 
     @Override
     public void onDisable() {
         game.removeLoreFromPlayers();
     }
+
 
     @EventHandler
     public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
