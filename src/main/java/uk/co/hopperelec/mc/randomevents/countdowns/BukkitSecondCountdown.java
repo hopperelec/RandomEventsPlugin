@@ -4,6 +4,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import uk.co.hopperelec.mc.randomevents.TimeInSeconds;
 
+import javax.annotation.CheckReturnValue;
+
 public class BukkitSecondCountdown {
     @NotNull private final TimeInSeconds timeRemaining = new TimeInSeconds();
     private final TimeInSeconds length;
@@ -42,6 +44,7 @@ public class BukkitSecondCountdown {
         timeRemaining.decrement();
     }
 
+    @CheckReturnValue
     public @NotNull TimeInSeconds getTimeRemaining() {
         return new TimeInSeconds(timeRemaining);
     }
@@ -52,6 +55,7 @@ public class BukkitSecondCountdown {
         timeRemaining.set(newTimeRemaining);
     }
 
+    @CheckReturnValue
     public @NotNull TimeInSeconds getLength() {
         return new TimeInSeconds(length);
     }
@@ -62,6 +66,7 @@ public class BukkitSecondCountdown {
         }
     }
 
+    @CheckReturnValue
     public double getPercentageComplete() {
         return timeRemaining.dividedBy(length);
     }

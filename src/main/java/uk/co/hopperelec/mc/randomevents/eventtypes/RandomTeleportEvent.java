@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
+import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +32,7 @@ public class RandomTeleportEvent extends MonoMetricRandomEventType {
         return "Teleported!";
     }
 
+    @CheckReturnValue
     private @Nullable Location getRandomSafeLocationNear(@NotNull Location location) {
         final int minX = location.getBlockX()-plugin.config.teleportSearchRadius();
         final int maxX = location.getBlockX()+plugin.config.teleportSearchRadius();

@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
+import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,6 +30,7 @@ public class RandomStructureEvent extends PolyMetricRandomEventType<RandomStruct
             float integrity
     ) {}
 
+    @CheckReturnValue
     private @NotNull ServerLevel getNMSWorld(@NotNull World world) {
         return ((CraftWorld) world).getHandle();
     }

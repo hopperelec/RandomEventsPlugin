@@ -2,6 +2,8 @@ package uk.co.hopperelec.mc.randomevents;
 
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.CheckReturnValue;
+
 public class TimeInSeconds {
     protected short unsignedTime;
 
@@ -15,9 +17,11 @@ public class TimeInSeconds {
         set(newValue);
     }
 
+    @CheckReturnValue
     public int asInt() {
         return unsignedTime+Short.MAX_VALUE;
     }
+    @CheckReturnValue
     public double asDouble() {
         return asInt();
     }
@@ -31,9 +35,11 @@ public class TimeInSeconds {
     public void set(@NotNull TimeInSeconds newValue) {
         unsignedTime = newValue.unsignedTime;
     }
+    @CheckReturnValue
     public double dividedBy(@NotNull TimeInSeconds operand) {
         return asDouble()/operand.asDouble();
     }
+    @CheckReturnValue
     public boolean moreThan(@NotNull TimeInSeconds operand) {
         return unsignedTime > operand.unsignedTime;
     }

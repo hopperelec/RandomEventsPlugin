@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 
 public class RandomEffectEvent extends PolyMetricRandomEventType<PotionEffect> {
@@ -20,6 +21,7 @@ public class RandomEffectEvent extends PolyMetricRandomEventType<PotionEffect> {
         return true;
     }
 
+    @CheckReturnValue
     private @NotNull PotionEffect generateBasePotionEffect(@NotNull PotionEffectType potionEffectType) {
         return new PotionEffect(potionEffectType, Integer.MAX_VALUE, 1);
     }

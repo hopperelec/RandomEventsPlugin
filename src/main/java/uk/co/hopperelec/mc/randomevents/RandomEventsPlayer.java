@@ -14,6 +14,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,6 +29,7 @@ public class RandomEventsPlayer implements InventoryHolder {
         this.game = game;
     }
 
+    @CheckReturnValue
     public static @NotNull RandomEventsPlayer getRandomEventsPlayer(@NotNull Player spigotPlayer, @NotNull RandomEventsGame game) {
         for (RandomEventsPlayer randomEventsPlayer : allPlayers) {
             if (randomEventsPlayer.spigotPlayer.equals(spigotPlayer)) {
@@ -77,14 +79,17 @@ public class RandomEventsPlayer implements InventoryHolder {
     }
 
     @Override
+    @CheckReturnValue
     public @NotNull Inventory getInventory() {
         return spigotPlayer.getInventory();
     }
 
+    @CheckReturnValue
     public @NotNull Location getLocation() {
         return spigotPlayer.getLocation();
     }
 
+    @CheckReturnValue
     public @NotNull World getWorld() {
         return spigotPlayer.getWorld();
     }

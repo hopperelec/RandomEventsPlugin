@@ -5,6 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
+import javax.annotation.CheckReturnValue;
+
 public abstract sealed class RandomEventType permits MonoMetricRandomEventType,PolyMetricRandomEventType {
     @NotNull
     protected final RandomEventsPlugin plugin;
@@ -18,6 +20,7 @@ public abstract sealed class RandomEventType permits MonoMetricRandomEventType,P
         if (sound != null) player.playSound(sound);
     }
 
+    @CheckReturnValue
     public @NotNull String getName() {
         return plugin.registeredEventTypes.inverse().get(this);
     }

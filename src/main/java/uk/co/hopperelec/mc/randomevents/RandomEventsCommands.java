@@ -11,6 +11,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.eventtypes.RandomEventType;
 
+import javax.annotation.CheckReturnValue;
+
 @CommandAlias("randomevents")
 @Description("Core command for RandomEvents")
 public class RandomEventsCommands extends BaseCommand {
@@ -58,6 +60,7 @@ public class RandomEventsCommands extends BaseCommand {
         }
     }
 
+    @CheckReturnValue
     private @Nullable Object getSeedFromName(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Nullable String name) {
         if (name == null) {
             if (sender instanceof Player player) {

@@ -22,6 +22,7 @@ import uk.co.hopperelec.mc.randomevents.eventtypes.MonoMetricRandomEventType;
 import uk.co.hopperelec.mc.randomevents.eventtypes.PolyMetricRandomEventType;
 import uk.co.hopperelec.mc.randomevents.eventtypes.RandomEventType;
 
+import javax.annotation.CheckReturnValue;
 import java.util.*;
 
 import static net.kyori.adventure.text.format.NamedTextColor.*;
@@ -67,6 +68,7 @@ public class RandomEventsGame {
         clearPotionEffects();
     }
 
+    @CheckReturnValue
     public boolean isOngoing() {
         return countdown.isOngoing();
     }
@@ -150,6 +152,7 @@ public class RandomEventsGame {
     }
 
 
+    @CheckReturnValue
     private @NotNull Material getNewDropFor(@NotNull Object seed) {
         final Random random = new Random(config.lootSeed + seed.hashCode());
         while (true) {
@@ -157,12 +160,14 @@ public class RandomEventsGame {
             if (newDrop.isItem()) return newDrop;
         }
     }
+    @CheckReturnValue
     public List<ItemStack> getNewDropsFor(Object seed) {
         final List<ItemStack> newDroppedItems = new ArrayList<>();
         newDroppedItems.add(new ItemStack(getNewDropFor(seed)));
         return newDroppedItems;
     }
 
+    @CheckReturnValue
     public @NotNull Component getDropsTextForItems(@NotNull List<ItemStack> newDroppedItems) {
         Component loreToAdd = LORE_PREFIX.append(Component.translatable(newDroppedItems.remove(0).translationKey(), BLUE).decoration(BOLD, false));
         for (ItemStack newDroppedItem : newDroppedItems) {
@@ -174,11 +179,13 @@ public class RandomEventsGame {
         }
         return loreToAdd;
     }
+    @CheckReturnValue
     public @NotNull Component getDropsTextFor(@NotNull Object seed) {
         if (isLearned(seed)) return getDropsTextForItems(getNewDropsFor(seed));
         return UNKNOWN_DROP_TEXT;
     }
 
+    @CheckReturnValue
     public @Nullable Object getSeedFor(@Nullable ItemStack itemStack) {
         if (itemStack == null || itemStack.getType() == Material.AIR) {
             return null;
@@ -192,6 +199,7 @@ public class RandomEventsGame {
         return null;
     }
 
+    @CheckReturnValue
     public boolean hasLore(@Nullable ItemStack itemStack) {
         if (itemStack == null) return false;
         final ItemMeta itemMeta = itemStack.getItemMeta();
@@ -303,6 +311,7 @@ public class RandomEventsGame {
     }
 
 
+    @CheckReturnValue
     public boolean isLearned(@NotNull Object seed) {
         return learnedDropSeeds.contains(seed);
     }
@@ -330,6 +339,7 @@ public class RandomEventsGame {
         }
     }
 
+    @CheckReturnValue
     public boolean doesRequireLearning() {
         return config.requireLearning;
     }
@@ -343,13 +353,16 @@ public class RandomEventsGame {
     }
 
 
+    @CheckReturnValue
     public boolean hasPlayer(@NotNull Player player) {
         return hasPlayer(getRandomEventsPlayer(player, this));
     }
+    @CheckReturnValue
     public boolean hasPlayer(@NotNull RandomEventsPlayer player) {
         return players.contains(player);
     }
 
+    @CheckReturnValue
     public @NotNull Set<RandomEventsPlayer> getPlayers() {
         return players;
     }
@@ -377,6 +390,7 @@ public class RandomEventsGame {
     }
 
 
+    @CheckReturnValue
     public @NotNull TimeInSeconds getCountdownLength() {
         return countdown.getLength();
     }
@@ -385,6 +399,7 @@ public class RandomEventsGame {
         countdown.setLength(newLength);
     }
 
+    @CheckReturnValue
     public @NotNull TimeInSeconds getTimeTillNextEvent() {
         return countdown.getTimeRemaining();
     }
@@ -392,6 +407,7 @@ public class RandomEventsGame {
         countdown.setTimeRemaining(newTimeRemaining);
     }
 
+    @CheckReturnValue
     public long getLootSeed() {
         return config.lootSeed;
     }
@@ -399,7 +415,8 @@ public class RandomEventsGame {
         config.lootSeed = seed;
         // resetLore();
     }
-    
+
+    @CheckReturnValue
     public boolean doesDisplayLore() {
         return config.displayLore;
     }
@@ -411,11 +428,13 @@ public class RandomEventsGame {
             else removeLoreFromPlayers();
         }
     }
+    @CheckReturnValue
     public boolean currentlyDisplayingLore() {
         return doesDisplayLore() && isOngoing();
     }
 
-    public RandomEventScope getShareScope() {
+    @CheckReturnValue
+    public @NotNull RandomEventScope getShareScope() {
         return config.shareScope;
     }
     public void setShareScope(@NotNull RandomEventScope scope) {

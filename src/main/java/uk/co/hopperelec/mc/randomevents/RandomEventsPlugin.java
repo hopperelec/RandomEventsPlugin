@@ -41,6 +41,7 @@ import uk.co.hopperelec.mc.randomevents.config.RandomEventsConfig;
 import uk.co.hopperelec.mc.randomevents.config.RandomEventsGameConfig;
 import uk.co.hopperelec.mc.randomevents.eventtypes.*;
 
+import javax.annotation.CheckReturnValue;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -57,10 +58,12 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     public final NamespacedKey ITEM_LORE_HASH_KEY = new NamespacedKey(this, "lore-hash");
 
 
+    @CheckReturnValue
     public <T> T getRandomFrom(@NotNull T @NotNull [] array) {
         return array[random.nextInt(array.length)];
     }
 
+    @CheckReturnValue
     public <M> M chooseRandom(@NotNull Collection<M> possibleValues, @NotNull Map<M,Float> weights) {
         double totalWeight = 0;
         for (M possibleValue : possibleValues) {
@@ -77,6 +80,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
         return null;
     }
 
+    @CheckReturnValue
     public @NotNull RandomEventType chooseRandomEvent(@NotNull RandomEventWeightPreset weightPreset) {
         final Map<RandomEventType,Float> weights = new HashMap<>();
         for (Map.Entry<String,Float> weightByName : weightPreset.eventTypes().entrySet()) {
@@ -86,11 +90,13 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     }
 
 
+    @CheckReturnValue
     private @NotNull File getConfigFile() {
         saveDefaultConfig();
         return new File(getDataFolder(), "config.yml");
     }
 
+    @CheckReturnValue
     private @NotNull RandomEventsConfig getRandomEventsConfig(File configFile) throws IOException {
         final ObjectMapper configMapper = YAMLMapper.builder()
                 .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
@@ -185,6 +191,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
         ).toList();
     }
 
+    @CheckReturnValue
     private boolean isInOngoingGame(@NotNull HumanEntity player) {
         return game.isOngoing() && game.hasPlayer((Player) player);
     }
