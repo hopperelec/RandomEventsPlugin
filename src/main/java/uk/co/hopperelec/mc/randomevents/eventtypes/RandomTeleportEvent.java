@@ -1,6 +1,7 @@
 package uk.co.hopperelec.mc.randomevents.eventtypes;
 
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +34,12 @@ public class RandomTeleportEvent extends MonoMetricRandomEventType {
     }
 
     @CheckReturnValue
-    private @Nullable Location getRandomSafeLocationNear(@NotNull Location location) {
+    private boolean isSafeLocation(@NotNull World world, int x, int y, int z) {
+        return world.getBlockAt(x, y, z).isSolid() && world.getBlockAt(x, y-1, z).isSolid();
+    }
+
+    @CheckReturnValue
+    private @NotNull List<Vector> getSafeLocationsNear(@NotNull Location location) {
         final int minX = location.getBlockX()-plugin.config.teleportSearchRadius();
         final int maxX = location.getBlockX()+plugin.config.teleportSearchRadius();
         final int minZ = location.getBlockZ()-plugin.config.teleportSearchRadius();
@@ -47,7 +53,7 @@ public class RandomTeleportEvent extends MonoMetricRandomEventType {
                     safeLocations.add(new Vector(x, maxY+1, z));
                     int y = minY;
                     while (y < maxY) {
-                        if (!location.getWorld().getBlockAt(x, y, z).isSolid() && location.getWorld().getBlockAt(x, y-1, z).isSolid()) {
+                        if (isSafeLocation(location.getWorld(), x, y, z)) {
                             safeLocations.add(new Vector(x, y, z));
                             y++;
                         }
@@ -56,6 +62,12 @@ public class RandomTeleportEvent extends MonoMetricRandomEventType {
                 }
             }
         }
+        return safeLocations;
+    }
+
+    @CheckReturnValue
+    private @Nullable Location getRandomSafeLocationNear(@NotNull Location location) {
+        final List<Vector> safeLocations = getSafeLocationsNear(location);
         if (safeLocations.isEmpty()) return null;
         final Vector safeLocation = safeLocations.get(plugin.random.nextInt(safeLocations.size()));
         return location.set(safeLocation.getX(), safeLocation.getY(), safeLocation.getZ());
