@@ -11,7 +11,6 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_20_R1.CraftWorld;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
@@ -65,13 +64,8 @@ public class RandomStructureEvent extends PolyMetricRandomEventType<RandomStruct
     }
 
     @Override
-    protected @Nullable StructureTemplateDetails getMetricByName(@NotNull String name) { return null; }
-    @Override
-    protected @Nullable StructureTemplateDetails getMetricByName(@NotNull String name, @NotNull World world) {
-        final ResourceLocation key = new ResourceLocation(name);
-        return getNMSWorld(world).getStructureManager().get(key)
-                .map(structureTemplate -> new StructureTemplateDetails(structureTemplate, key, 1))
-                .orElse(null);
+    protected @NotNull String getMetricKey(@NotNull StructureTemplateDetails details) {
+        return details.key.toString();
     }
 
     @Override

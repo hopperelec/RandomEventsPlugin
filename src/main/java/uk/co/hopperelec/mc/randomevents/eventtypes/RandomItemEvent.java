@@ -5,7 +5,6 @@ import org.bukkit.World;
 import org.bukkit.entity.Damageable;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
@@ -38,11 +37,6 @@ public class RandomItemEvent extends PolyMetricRandomEventType<Material> {
     @Override
     protected @NotNull Material[] getAllMetrics() {
         return Material.values();
-    }
-
-    @Override
-    protected @Nullable Material getMetricByName(@NotNull String name) {
-        return Material.getMaterial(name);
     }
 
     @Override

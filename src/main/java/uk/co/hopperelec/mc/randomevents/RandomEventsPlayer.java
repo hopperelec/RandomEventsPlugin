@@ -4,6 +4,7 @@ import net.kyori.adventure.sound.Sound;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -70,8 +71,8 @@ public class RandomEventsPlayer implements InventoryHolder {
         getInventory().addItem(itemStack);
     }
 
-    public void spawnEntity(@NotNull EntityType entityType) {
-        getWorld().spawnEntity(getLocation(), entityType);
+    public Entity spawnEntity(@NotNull EntityType entityType) {
+        return getWorld().spawnEntity(getLocation(), entityType);
     }
 
     public void teleport(@NotNull Location location) {

@@ -3,7 +3,6 @@ package uk.co.hopperelec.mc.randomevents.eventtypes;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
@@ -30,11 +29,6 @@ public class RandomBlockEvent extends PolyMetricRandomEventType<Material> {
     @Override
     protected @NotNull Material @NotNull[] getAllMetrics() {
         return Material.values();
-    }
-
-    @Override
-    protected @Nullable Material getMetricByName(@NotNull String name) {
-        return Material.getMaterial(name);
     }
 
     @Override

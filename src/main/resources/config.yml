@@ -54,6 +54,16 @@ weight_presets:
       effect: 3
       structure: 1
 
+    grand_sub_events:
+      entity_passenger: 0.05 # The absolute probability that an entity randomly spawned will have another entity riding it
+      effect_amplifiers: # Weights for how powerful a random effect can be
+        1: 1
+        2: 1
+        3: 1
+        5: 1
+        20: 2
+        127: 2
+
     sub_events:
       block:
         VOID_AIR: 0
@@ -613,6 +623,7 @@ weight_presets:
       entity:
         # Invisible or completely useless
         AREA_EFFECT_CLOUD: 0
+        ITEM_DISPLAY: 0
         BLOCK_DISPLAY: 0
         ENDER_PEARL: 0
         ENDER_SIGNAL: 0

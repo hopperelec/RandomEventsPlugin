@@ -45,6 +45,7 @@ import javax.annotation.CheckReturnValue;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 
 import static com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE;
 import static uk.co.hopperelec.mc.randomevents.RandomEventsPlayer.getRandomEventsPlayer;
@@ -64,29 +65,38 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     }
 
     @CheckReturnValue
-    public <M> M chooseRandom(@NotNull Collection<M> possibleValues, @NotNull Map<M,Float> weights) {
-        double totalWeight = 0;
-        for (M possibleValue : possibleValues) {
-            final Float weight = weights.get(possibleValue);
-            totalWeight += weight == null ? 1 : weight;
-        }
+    public <M> M chooseRandom(@NotNull Map<M,Float> weights) {
+        double totalWeight = weights.values().stream().mapToDouble(Float::floatValue).sum();
         final double randomValue = random.nextDouble(totalWeight);
         double acc = 0;
-        for (M possibleValue : possibleValues) {
-            final Float weight = weights.get(possibleValue);
-            acc += weight == null ? 1 : weight;
-            if (acc > randomValue) return possibleValue;
+        for (Map.Entry<M,Float> possibleValue : weights.entrySet()) {
+            acc += possibleValue.getValue();
+            if (acc > randomValue) return possibleValue.getKey();
         }
         return null;
+    }
+    @CheckReturnValue
+    public <M> M chooseRandom(@NotNull Set<M> possibleValues, @NotNull Map<String,Float> weightsByKey, Function<M,String> mapper) {
+        final Map<M,Float> weights = new HashMap<>();
+        for (M value : possibleValues) {
+            final String key = mapper.apply(value).toUpperCase();
+            weights.put(value,
+                    weightsByKey.entrySet().stream()
+                        .filter(weightByKey -> weightByKey.getKey().toUpperCase().equals(key))
+                        .map(Map.Entry::getValue)
+                        .findAny().orElse(1f)
+            );
+        }
+        return chooseRandom(weights);
     }
 
     @CheckReturnValue
     public @NotNull RandomEventType chooseRandomEvent(@NotNull RandomEventWeightPreset weightPreset) {
-        final Map<RandomEventType,Float> weights = new HashMap<>();
-        for (Map.Entry<String,Float> weightByName : weightPreset.eventTypes().entrySet()) {
-            weights.put(registeredEventTypes.get(weightByName.getKey()), weightByName.getValue());
-        }
-        return chooseRandom(registeredEventTypes.values(), weights);
+        return chooseRandom(
+                new HashSet<>(registeredEventTypes.values()),
+                weightPreset.eventTypes(),
+                eventName -> registeredEventTypes.inverse().get(eventName)
+        );
     }
 
 

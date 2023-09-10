@@ -2,15 +2,11 @@ package uk.co.hopperelec.mc.randomevents.eventtypes;
 
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract non-sealed class PolyMetricRandomEventType<M> extends RandomEventType {
@@ -39,36 +35,31 @@ public abstract non-sealed class PolyMetricRandomEventType<M> extends RandomEven
     protected @NotNull M[] getAllMetrics(@NotNull World world) { return getAllMetrics(); }
 
     @CheckReturnValue
-    protected abstract @Nullable M getMetricByName(@NotNull String name);
-    @CheckReturnValue
-    protected @Nullable M getMetricByName(@NotNull String name, @NotNull World world) { return getMetricByName(name); }
+    protected @NotNull String getMetricKey(@NotNull M metric) { return metric.toString(); }
 
     @CheckReturnValue
-    protected @NotNull Set<M> getValidMetrics(M[] metrics, @NotNull RandomEventsPlayer player) {
-        return Arrays.stream(metrics)
+    protected @NotNull Set<M> getValidMetrics(@NotNull RandomEventsPlayer player) {
+        return Arrays.stream(getAllMetrics(player.getWorld()))
                 .filter(metric -> isValidMetric(metric, player))
                 .collect(Collectors.toUnmodifiableSet());
     }
 
     @CheckReturnValue
-    protected Map<M,Float> getWeights(@NotNull RandomEventsPlayer player) {
-        final Map<String,Float> weightsByName = player.game.weightPreset.subEvents().get(getName());
-        if (weightsByName == null) return Map.of();
-        final Map<M,Float> weights = new HashMap<>();
-        for (Map.Entry<String,Float> weightByName : weightsByName.entrySet()) {
-            final M metric = getMetricByName(weightByName.getKey(), player.getWorld());
-            if (metric != null) weights.put(metric,weightByName.getValue());
-        }
-        return weights;
-    }
-
-    @CheckReturnValue
     public M getRandomMetricFor(@NotNull RandomEventsPlayer player) {
-        return plugin.chooseRandom(getValidMetrics(getAllMetrics(player.getWorld()), player), getWeights(player));
+        final Set<M> validMetrics = getValidMetrics(player);
+        final Map<String,Float> weightsByName = player.game.weightPreset.subEvents().get(getName());
+        if (weightsByName == null) {
+            final Iterator<M> iterator = validMetrics.iterator();
+            final int randomIndex = plugin.random.nextInt(validMetrics.size()-1);
+            for (int i = 0; i < randomIndex; i++) iterator.next();
+            return iterator.next();
+        }
+        return plugin.chooseRandom(validMetrics, weightsByName, this::getMetricKey);
     }
 
     @CheckReturnValue
     protected abstract @NotNull String getSuccessMessage(M metric);
+
     @CheckReturnValue
     protected @NotNull String formatId(@NotNull Object id) {
         return Arrays.stream(id.toString().split("_"))
