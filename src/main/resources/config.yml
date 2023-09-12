@@ -70,6 +70,7 @@ weight_presets:
         CAVE_AIR: 0
         STRUCTURE_VOID: 0
         WALL_TORCH: 0
+        REDSTONE_WALL_TORCH: 0
 
         # Dyed blocks
         ORANGE_WOOL: 0.25

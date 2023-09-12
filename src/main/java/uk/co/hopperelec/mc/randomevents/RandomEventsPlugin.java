@@ -4,6 +4,7 @@ import co.aikar.commands.InvalidCommandArgument;
 import co.aikar.commands.MessageKeys;
 import co.aikar.commands.PaperCommandManager;
 import co.aikar.commands.bukkit.contexts.OnlinePlayer;
+import com.destroystokyo.paper.event.block.BlockDestroyEvent;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -11,26 +12,26 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import io.papermc.paper.event.block.BlockBreakBlockEvent;
 import net.kyori.adventure.sound.Sound;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.ShulkerBox;
+import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -55,7 +56,6 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     public RandomEventsConfig config;
     @NotNull public final BiMap<String,RandomEventType> registeredEventTypes = HashBiMap.create();
     @NotNull public final Random random = new Random();
-    private boolean processingEvent = false;
     public final NamespacedKey ITEM_LORE_HASH_KEY = new NamespacedKey(this, "lore-hash");
 
 
@@ -195,71 +195,120 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
         game.joinPlayer(event.getPlayer());
     }
 
-    private List<Item> dropItems(@NotNull List<ItemStack> items, @NotNull Location location) {
-        return items.stream().map(
-                itemStack -> location.getWorld().dropItemNaturally(location, itemStack)
-        ).toList();
-    }
-
     @CheckReturnValue
     private boolean isInOngoingGame(@NotNull HumanEntity player) {
         return game.isOngoing() && game.hasPlayer((Player) player);
     }
 
-    private void addFromInventory(@NotNull List<ItemStack> list, @NotNull Inventory inventory) {
-        for (ItemStack itemStack : inventory.getContents()) {
+    private void addFromInventory(@NotNull List<ItemStack> list, @NotNull InventoryHolder inventoryHolder) {
+        for (ItemStack itemStack : inventoryHolder.getInventory().getContents()) {
             if (itemStack != null && itemStack.getType() != Material.AIR) {
                 list.add(itemStack);
             }
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onBlockDropItem(@NotNull BlockDropItemEvent event) {
-        if (!isInOngoingGame(event.getPlayer()) || event.getPlayer().getGameMode() == GameMode.CREATIVE || processingEvent) return;
 
-        event.setCancelled(true);
-        final List<ItemStack> newDroppedItems = game.getNewDropsFor(event.getBlockState().getType());
-        final BlockState blockState = event.getBlockState();
-        if (blockState instanceof ShulkerBox) {
-            addFromInventory(newDroppedItems, ((ShulkerBox)blockState).getInventory());
-        } else if (blockState instanceof InventoryHolder) {
-            final Material type = blockState.getType();
-            boolean removedBlockItem = false;
-            for (Item item : event.getItems()) {
-                final ItemStack itemStack = item.getItemStack();
-                if (!removedBlockItem && itemStack.getType() == type) {
-                    removedBlockItem = true;
-                    if (itemStack.getAmount() <= 1) continue;
-                    itemStack.setAmount(itemStack.getAmount()-1);
-                }
-                newDroppedItems.add(itemStack);
-            }
-        }
-
-        game.learn(event.getBlockState().getType());
-        processingEvent = true;
-        new BlockDropItemEvent(
-                event.getBlock(),
-                event.getBlockState(),
-                event.getPlayer(),
-                dropItems(newDroppedItems, event.getBlock().getLocation())
-        ).callEvent();
-        processingEvent = false;
+    // Random block drops
+    private boolean doTileDrops(@NotNull World world) {
+        return world.getGameRuleValue(GameRule.DO_TILE_DROPS) == Boolean.TRUE;
+    }
+    private boolean dropItemsFor(@NotNull World world) {
+        return game.isOngoing() && doTileDrops(world);
+    }
+    private boolean dropItemsFor(@NotNull Block block) {
+        return dropItemsFor(block.getWorld());
     }
 
+    private @NotNull List<ItemStack> getDroppedItemStacks(@NotNull Block block) {
+        final List<ItemStack> newDroppedItems = game.getNewDropsFor(block.getType());
+        if (block instanceof InventoryHolder inventoryHolder) addFromInventory(newDroppedItems, inventoryHolder);
+        game.learn(block.getType());
+        return newDroppedItems;
+    }
+
+    private @NotNull List<Item> dropItems(@NotNull Block block) {
+        return getDroppedItemStacks(block).stream().map(
+                itemStack -> block.getWorld().dropItemNaturally(block.getLocation(), itemStack)
+        ).toList();
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockBreak(@NotNull BlockBreakEvent event) {
+        if (!isInOngoingGame(event.getPlayer())) return;
+        if (!event.isDropItems()) return;
+        if (!doTileDrops(event.getBlock().getWorld())) return;
+        if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
+        if (event.getBlock().getBlockData().requiresCorrectToolForDrops() && !event.getBlock().isValidTool(event.getPlayer().getInventory().getItemInMainHand())) return;
+
+        event.setDropItems(false);
+        new BlockDropItemEvent(
+                event.getBlock(), event.getBlock().getState(), event.getPlayer(), dropItems(event.getBlock())
+        ).callEvent();
+    }
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onBlockDestroy(@NotNull BlockDestroyEvent event) {
+        if (dropItemsFor(event.getBlock()) && event.willDrop()) {
+            event.setWillDrop(false);
+            // Needs to be delayed, because if a cancelled BlockBreakEvent triggers this then the drop items would be otherwise removed
+            getServer().getScheduler().scheduleSyncDelayedTask(this, () -> dropItems(event.getBlock()));
+        }
+    }
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onLeafDecay(@NotNull LeavesDecayEvent event) {
+        if (dropItemsFor(event.getBlock())) {
+            dropItems(event.getBlock());
+            event.setCancelled(true);
+            event.getBlock().setType(Material.AIR);
+        }
+    }
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onBlockBreakBlock(@NotNull BlockBreakBlockEvent event) {
+        if (dropItemsFor(event.getBlock())) {
+            event.getDrops().clear();
+            event.getDrops().addAll(getDroppedItemStacks(event.getBlock()));
+        }
+    }
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockExplode(@NotNull BlockExplodeEvent event) {
+        if (dropItemsFor(event.getBlock())) {
+            for (Block block : event.blockList()) {
+                if (random.nextFloat() < event.getYield()) {
+                    dropItems(block);
+                }
+            }
+            event.setYield(0);
+        }
+    }
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityExplode(@NotNull EntityExplodeEvent event) {
+        if (dropItemsFor(event.getEntity().getWorld())) {
+            for (Block block : event.blockList()) {
+                if (random.nextFloat() < event.getYield()) {
+                    dropItems(block);
+                }
+            }
+            event.setYield(0);
+        }
+    }
+
+
+    // Random entity drops
+    // Current known issues: Campfires, jukeboxes, /give, items given by other plugins
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onEntityDeath(@NotNull EntityDeathEvent event) {
         if (game.isOngoing()) {
             event.getDrops().clear();
             event.getDrops().addAll(game.getNewDropsFor(event.getEntity()));
-            if (event.getEntity() instanceof InventoryHolder) {
-                addFromInventory(event.getDrops(), ((InventoryHolder)event.getEntity()).getInventory());
+            if (event.getEntity() instanceof InventoryHolder inventoryHolder) {
+                addFromInventory(event.getDrops(), inventoryHolder);
             }
             game.learn(event.getEntity().getType());
         }
     }
 
+
+    // Item lore maintenance
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryOpen(@NotNull InventoryOpenEvent event) {
         game.handleLoreFor(event.getInventory());
@@ -305,5 +354,4 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
             }
         }
     }
-    // Current known issues: Campfires, jukeboxes, /give, items given by other plugins
 }
