@@ -1,4 +1,4 @@
-package uk.co.hopperelec.mc.randomevents;
+package uk.co.hopperelec.mc.randomevents.utils;
 
 import org.jetbrains.annotations.NotNull;
 

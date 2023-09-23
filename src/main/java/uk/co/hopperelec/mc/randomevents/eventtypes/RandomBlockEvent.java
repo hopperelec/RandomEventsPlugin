@@ -1,20 +1,19 @@
 package uk.co.hopperelec.mc.randomevents.eventtypes;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
-import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
-public class RandomBlockEvent extends PolyMetricRandomEventType<Material> {
+public class RandomBlockEvent extends PositionalPolyMetricRandomEventType<Material> {
     public RandomBlockEvent(@NotNull RandomEventsPlugin plugin) {
         super(plugin);
     }
 
     @Override
-    public boolean execute(@NotNull RandomEventsPlayer player, @NotNull Material material) {
-        player.setBlock(material);
-        return true;
+    public void execute(@NotNull Location location, Material material) {
+        location.getBlock().setType(material);
     }
 
     @Override
@@ -27,7 +26,7 @@ public class RandomBlockEvent extends PolyMetricRandomEventType<Material> {
     }
 
     @Override
-    protected @NotNull Material @NotNull[] getAllMetrics() {
+    protected @NotNull Material @NotNull[] getAllMetrics(@NotNull World world) {
         return Material.values();
     }
 

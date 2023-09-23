@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class RandomEventsPlayer implements InventoryHolder {
-    @NotNull private final Player spigotPlayer;
+    @NotNull public final Player spigotPlayer;
     @NotNull public final RandomEventsGame game;
     @Nullable private PotionEffectType lastPotionEffect;
     @NotNull private static final Set<RandomEventsPlayer> allPlayers = new HashSet<>();

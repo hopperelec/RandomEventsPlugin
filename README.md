@@ -9,7 +9,9 @@ Random events can be registered by other plugins, but by default this plugin off
 - A random entity being spawned on you
 - Randomly teleporting to a random block near you
 - A random effect being applied to you
+- A random structure template being spawned on you
 - A random structure being spawned on you
+- A random world feature being spawned on you
 
 ---
 
@@ -18,6 +20,7 @@ The following features can be configured:
 - Countdown location
 - Sound effects
 - Default game options (including seed, lore and share scope)
+- Special items
 - Weight presets
 
 ---

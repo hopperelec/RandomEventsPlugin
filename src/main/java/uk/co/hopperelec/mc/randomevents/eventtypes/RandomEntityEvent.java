@@ -2,6 +2,7 @@ package uk.co.hopperelec.mc.randomevents.eventtypes;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang.ArrayUtils;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -15,23 +16,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RandomEntityEvent extends PolyMetricRandomEventType<EntityType[]> {
+public class RandomEntityEvent extends PositionalPolyMetricRandomEventType<EntityType[]> {
     public RandomEntityEvent(@NotNull RandomEventsPlugin plugin) {
         super(plugin);
     }
 
     @Override
-    public boolean execute(@NotNull RandomEventsPlayer player, @NotNull EntityType @NotNull[] entityTypes) {
-        Entity topEntity = player.spawnEntity(entityTypes[0]);
+    public void execute(@NotNull Location location, @NotNull EntityType @NotNull[] entityTypes) {
+        Entity topEntity = location.getWorld().spawnEntity(location, entityTypes[0]);
         for (int i = 1; i < entityTypes.length; i++) {
-            final Entity nextEntity = player.spawnEntity(entityTypes[i]);
-            if (!topEntity.addPassenger(nextEntity)) {
-                player.sendMessage("Tried to spawn an entity stack, but an error occurred");
-                return false;
+            final Entity nextEntity = location.getWorld().spawnEntity(location, entityTypes[i]);
+            if (topEntity.addPassenger(nextEntity)) {
+                topEntity = nextEntity;
             }
-            topEntity = nextEntity;
         }
-        return true;
     }
 
     @Override
@@ -45,7 +43,7 @@ public class RandomEntityEvent extends PolyMetricRandomEventType<EntityType[]> {
     }
 
     @Override
-    protected @NotNull EntityType @NotNull[] @NotNull[] getAllMetrics() {
+    protected @NotNull EntityType @NotNull[] @NotNull[] getAllMetrics(@NotNull World world) {
         return Arrays.stream(EntityType.values()).map(entityType -> new EntityType[]{entityType}).toArray(EntityType[][]::new);
     }
 

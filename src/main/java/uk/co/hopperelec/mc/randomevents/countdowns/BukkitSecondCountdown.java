@@ -2,7 +2,7 @@ package uk.co.hopperelec.mc.randomevents.countdowns;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
-import uk.co.hopperelec.mc.randomevents.TimeInSeconds;
+import uk.co.hopperelec.mc.randomevents.utils.TimeInSeconds;
 
 import javax.annotation.CheckReturnValue;
 
@@ -20,7 +20,9 @@ public class BukkitSecondCountdown {
     }
 
     public void start() {
-        scheduledTaskId = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, this::tick, 20L, 20L);
+        if (scheduledTaskId == -1) {
+            scheduledTaskId = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, this::tick, 20L, 20L);
+        }
     }
 
     public void pause() {
@@ -32,14 +34,18 @@ public class BukkitSecondCountdown {
         timeRemaining.set(length);
     }
 
+    public void skip() {
+        reset();
+        action.run();
+    }
+
     public boolean isOngoing() {
         return scheduledTaskId != -1;
     }
 
     public void tick() {
         if (timeRemaining.asInt() <= 1) {
-            reset();
-            action.run();
+            skip();
         }
         timeRemaining.decrement();
     }

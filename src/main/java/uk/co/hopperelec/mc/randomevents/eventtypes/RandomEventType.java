@@ -8,8 +8,7 @@ import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 import javax.annotation.CheckReturnValue;
 
 public abstract sealed class RandomEventType permits MonoMetricRandomEventType,PolyMetricRandomEventType {
-    @NotNull
-    protected final RandomEventsPlugin plugin;
+    @NotNull protected final RandomEventsPlugin plugin;
 
     public RandomEventType(@NotNull RandomEventsPlugin plugin) {
         this.plugin = plugin;

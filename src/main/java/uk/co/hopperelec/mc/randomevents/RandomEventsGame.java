@@ -1,9 +1,11 @@
 package uk.co.hopperelec.mc.randomevents;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -18,9 +20,8 @@ import uk.co.hopperelec.mc.randomevents.config.RandomEventScope;
 import uk.co.hopperelec.mc.randomevents.config.RandomEventWeightPreset;
 import uk.co.hopperelec.mc.randomevents.config.RandomEventsGameConfig;
 import uk.co.hopperelec.mc.randomevents.countdowns.*;
-import uk.co.hopperelec.mc.randomevents.eventtypes.MonoMetricRandomEventType;
-import uk.co.hopperelec.mc.randomevents.eventtypes.PolyMetricRandomEventType;
-import uk.co.hopperelec.mc.randomevents.eventtypes.RandomEventType;
+import uk.co.hopperelec.mc.randomevents.eventtypes.*;
+import uk.co.hopperelec.mc.randomevents.utils.TimeInSeconds;
 
 import javax.annotation.CheckReturnValue;
 import java.util.*;
@@ -36,6 +37,7 @@ public class RandomEventsGame {
     public RandomEventWeightPreset weightPreset;
     @NotNull public final static TextComponent LORE_PREFIX = Component.text("Drops: ", YELLOW, BOLD).decoration(ITALIC, false);
     @NotNull public final static TextComponent UNKNOWN_DROP_TEXT = LORE_PREFIX.append(Component.text("Unknown").decoration(OBFUSCATED, true));
+    @NotNull private final Map<Block,Short> timerBlocks = new HashMap<>();
     @NotNull private final Set<RandomEventsPlayer> players = new HashSet<>();
     @NotNull private final Set<Object> learnedDropSeeds = new HashSet<>();
     @NotNull private final Map<Object,Set<ItemStack>> itemsWithLore = new HashMap<>();
@@ -46,17 +48,24 @@ public class RandomEventsGame {
         this.config = config;
         if (!setWeightPreset(config.weightPresetName)) throw new IllegalArgumentException("Tried to set a game config which contains the name of a weight preset which does not exist!");
         this.countdown = switch(plugin.config.countdownLocation()) {
-            case NONE -> new BukkitSecondCountdown(config.countdownLength, plugin, this::doRandomEvent);
-            case BOSSBAR -> new BukkitBossBarCountdown(config.countdownLength, plugin, this::doRandomEvent);
-            case SIDEBAR -> new BukkitSidebarCountdown(config.countdownLength, plugin, this::doRandomEvent);
-            case ACTION_BAR -> new BukkitActionBarCountdown(config.countdownLength, plugin, this::doRandomEvent);
+            case NONE -> new BukkitSecondCountdown(config.countdownLength, plugin, this::onEventTimerEnd);
+            case BOSSBAR -> new BukkitBossBarCountdown(config.countdownLength, plugin, this::onEventTimerEnd);
+            case SIDEBAR -> new BukkitSidebarCountdown(config.countdownLength, plugin, this::onEventTimerEnd);
+            case ACTION_BAR -> new BukkitActionBarCountdown(config.countdownLength, plugin, this::onEventTimerEnd);
         };
     }
 
     public void start() {
-        countdown.reset();
+        resetCountdown();
         countdown.start();
-        addLoreToPlayers();
+        resetLore();
+    }
+
+    public void resetCountdown() {
+        countdown.reset();
+    }
+    public void skipCountdown() {
+        countdown.skip();
     }
 
     public void stop() {
@@ -73,9 +82,56 @@ public class RandomEventsGame {
         return countdown.isOngoing();
     }
 
+    public void onEventTimerEnd() {
+        clearPotionEffects();
+        doRandomEvent();
+        useTimerBlocks();
+    }
+
+
+    public void addTimerBlock(@NotNull Block block, short remainingUses) {
+        timerBlocks.put(block, remainingUses);
+    }
+    public @NotNull Map<Block,Map<String, JsonNode>> getTimerBlocks() {
+        final Map<Block,Map<String, JsonNode>> blocks = new HashMap<>();
+        for (Block block : timerBlocks.keySet()) {
+            final Map<String, JsonNode> functionalityConfig = plugin.getSpecialItemFunctionalityConfig(block.getType(), "block_and_timer");
+            if (functionalityConfig == null) {
+                timerBlocks.remove(block);
+            } else {
+                blocks.put(block, functionalityConfig);
+            }
+        }
+        return blocks;
+    }
+
+    public void useTimerBlocks() {
+        for (Map.Entry<Block,Map<String, JsonNode>> timerBlock : getTimerBlocks().entrySet()) {
+            useTimerBlock(timerBlock.getKey(), timerBlock.getValue());
+        }
+    }
+    public void useTimerBlock(@NotNull Block block, Map<String, JsonNode> functionalityConfig) {
+        if (runTimerBlock(block, functionalityConfig)) {
+            block.setType(Material.AIR);
+            timerBlocks.remove(block);
+        }
+    }
+    private boolean runTimerBlock(@NotNull Block block, Map<String, JsonNode> functionalityConfig) {
+        final Material material = block.getType();
+        if (plugin.doSpecialItemProbability(functionalityConfig)) {
+            if (!plugin.getSpecialItemFunctionality(material, functionalityConfig).execute(block, this)) { // TODO: If the functionality is random_event, should share scope with players
+                return false;
+            }
+        }
+        final short remainingUses = timerBlocks.get(block);
+        if (remainingUses < 0) return false;
+        if (remainingUses <= 1) return true;
+        timerBlocks.put(block, (short)(remainingUses-1));
+        return false;
+    }
+
 
     public void doRandomEvent() {
-        clearPotionEffects();
         if (config.shareScope == RandomEventScope.NONE) {
             for (RandomEventsPlayer player : players) {
                 doRandomEvent(player);
@@ -122,11 +178,23 @@ public class RandomEventsGame {
     public void doRandomEvent(@NotNull RandomEventsPlayer player) {
         doRandomEvent(player, plugin.chooseRandomEvent(weightPreset));
     }
+    public void doRandomEvent(@NotNull Block block) {
+        doRandomEvent(block, plugin.chooseRandomPositionalEvent(weightPreset));
+    }
     public void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull RandomEventType randomEventType) {
         if (randomEventType instanceof MonoMetricRandomEventType mRET) {
             doRandomEvent(player, mRET);
         } else if (randomEventType instanceof PolyMetricRandomEventType<?> pRET) {
             doRandomEvent(player, pRET);
+        } else {
+            throw new IllegalStateException("Sealed class RandomEventType should only be MonoMetric or PolyMetric but is somehow neither");
+        }
+    }
+    public void doRandomEvent(@NotNull Block block, @NotNull PositionalRandomEventType randomEventType) {
+        if (randomEventType instanceof PositionalMonoMetricRandomEventType pmRET) {
+            pmRET.execute(block, this);
+        } else if (randomEventType instanceof PositionalPolyMetricRandomEventType<?> ppRET) {
+            doRandomEvent(block, ppRET);
         } else {
             throw new IllegalStateException("Sealed class RandomEventType should only be MonoMetric or PolyMetric but is somehow neither");
         }
@@ -142,11 +210,27 @@ public class RandomEventsGame {
     public <M> void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull PolyMetricRandomEventType<M> randomEventType) {
         doRandomEvent(player, randomEventType, randomEventType.getRandomMetricFor(player));
     }
+    public <M> void doRandomEvent(@NotNull Block block, @NotNull PositionalPolyMetricRandomEventType<M> randomEventType) {
+        doRandomEvent(block, randomEventType, randomEventType.getRandomMetricFor(block, this));
+    }
+    public <M> void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull PolyMetricRandomEventType<M> randomEventType, short repeats) {
+        doRandomEvent(player, randomEventType, randomEventType.getRandomMetricFor(player), repeats);
+    }
+    public <M> void doRandomEvent(@NotNull Block block, @NotNull PositionalPolyMetricRandomEventType<M> randomEventType, short repeats) {
+        randomEventType.execute(block, randomEventType.getRandomMetricFor(block, this), repeats);
+    }
     public <M> void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull PolyMetricRandomEventType<M> type, M metric) {
-        final PolyMetricRandomEvent<M> event = new PolyMetricRandomEvent<>(this, player, type, metric);
+        doRandomEvent(player, type, metric, (short) 1);
+    }
+    public <M> void doRandomEvent(@NotNull Block block, @NotNull PositionalPolyMetricRandomEventType<M> type, M metric) {
+        type.execute(block, metric, (short)1);
+    }
+    public <M> void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull PolyMetricRandomEventType<M> type, M metric, short repeats) {
+        final PolyMetricRandomEvent<M> event = new PolyMetricRandomEvent<>(this, player, type, metric, repeats);
         if (event.callEvent()) {
-            if (event.type.execute(player, metric)) {
-                event.type.success(player, metric);
+            final short successfulRepeats = event.type.execute(player, metric, repeats);
+            if (successfulRepeats != 0) {
+                event.type.success(player, metric, successfulRepeats);
             }
         }
     }
@@ -428,6 +512,9 @@ public class RandomEventsGame {
             else removeLoreFromPlayers();
         }
     }
+    public void toggleLore() {
+        setDisplayLore(!config.displayLore);
+    }
     @CheckReturnValue
     public boolean currentlyDisplayingLore() {
         return doesDisplayLore() && isOngoing();
@@ -447,5 +534,15 @@ public class RandomEventsGame {
         config.weightPresetName = name;
         this.weightPreset = weightPreset;
         return true;
+    }
+
+    public boolean hasSpecialItems() {
+        return config.enableSpecialItems;
+    }
+    public void setHasSpecialItems(boolean hasSpecialItems) {
+        config.enableSpecialItems = hasSpecialItems;
+    }
+    public void toggleSpecialItems() {
+        config.enableSpecialItems = !config.enableSpecialItems;
     }
 }

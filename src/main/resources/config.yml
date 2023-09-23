@@ -1,6 +1,7 @@
 teleport_search_radius: 32 # Cube radius to search for safe teleport locations. Higher numbers will cause lag
 countdown_location: bossbar # Where to display the countdown; one of: none/bossbar/sidebar/action_bar
 
+# You can use https://misode.github.io/sounds/ to help find good sound effects
 event_sound_effects:
   block:
     sound: BLOCK_STONE_PLACE
@@ -22,7 +23,7 @@ event_sound_effects:
     sound: ENTITY_GENERIC_DRINK
     volume: .6
     pitch: 1
-  structure:
+  structure_template:
     sound: BLOCK_WOOD_PLACE
     volume: 1
     pitch: 1
@@ -40,6 +41,64 @@ defaults:
   require_learning: true # Whether players must first learn the drops of a block or entity before they are displayed in the lore
   share_scope: none # How much of an event is shared between all players in a game; one of: none/event_type/all
   weight_preset: default
+  enable_special_items: true
+
+
+# Various functionalities for special items, useful to give otherwise useless creative items a purpose in survival
+
+### THESE PROPERTIES MUST BE SPECIFIED FOR ALL SPECIAL ITEMS
+# cause: What must be done with this item to trigger its functionality
+#   drop - when the item is dropped
+#   place - when the item is placed against a block
+#   right_click - when the player right clicks with the item in their hand
+#   block_and_timer - when this item is placed, and then repeated every time the event timer ends
+# functionality: What happens when this special item is used
+#   random_event - a random event is triggered
+#   break_block - breaks the block involved in the cause (e.g: the block placed against or dropped onto)
+#   skip_countdown - Immediately triggers the next event and reset the event timer
+
+### THESE PROPERTIES CAN BE SPECIFIED FOR ALL CAUSES/FUNCTIONALITIES
+# uses: How many times the item can be used before it is deleted (-1 allows unlimited use)
+# probability: How likely the functionality is to occur (defaults to 1/always)
+
+### THESE PROPERTIES ARE SPECIFIC TO the random_event FUNCTIONALITY
+# event_type: Which event type the random_event functionality should trigger (picks a random type by default)
+# num_repeats: How many times to repeat the same random_event (duplicates sub_events and grand_sub_events too)
+# num_events: How many times to trigger the event (re-rolls all random parts of the event)
+# event_tick_delay: How many ticks to wait between each of the num_events
+
+special_items:
+  COMMAND_BLOCK:
+    cause: drop
+    functionality: random_event
+    event_type: item
+    num_repeats: 16
+  CHAIN_COMMAND_BLOCK:
+    cause: drop
+    functionality: random_event
+    num_events: 8
+    event_tick_delay: 10
+  REPEATING_COMMAND_BLOCK:
+    cause: block_and_timer
+    functionality: random_event
+    uses: -1
+  STRUCTURE_BLOCK:
+    cause: place
+    functionality: random_event
+    event_type: structure_template
+  JIGSAW:
+    cause: place
+    functionality: random_event
+    event_type: structure
+    probability: 0.5
+  STRUCTURE_VOID:
+    cause: place
+    functionality: break_block
+  DEBUG_STICK:
+    cause: right_click
+    functionality: skip_countdown
+    uses: 10
+
 
 # Weights are relative, where the default is 1
 # Something with a weight of 0.5 is half as likely to happen as something not listed.
@@ -52,7 +111,9 @@ weight_presets:
       entity: 5
       teleport: 3
       effect: 3
-      structure: 1
+      structure_template: 1
+      structure: 0
+      world_feature: 1
 
     grand_sub_events:
       entity_passenger: 0.05 # The absolute probability that an entity randomly spawned will have another entity riding it
@@ -663,4 +724,6 @@ weight_presets:
         LUCK: 0.1
         UNLUCK: 0.1
 
+      structure_template: {}
       structure: {}
+      world_feature: {}

@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.eventtypes.RandomEventType;
+import uk.co.hopperelec.mc.randomevents.utils.TimeInSeconds;
 
 import javax.annotation.CheckReturnValue;
 
@@ -136,6 +137,14 @@ public class RandomEventsCommands extends BaseCommand {
         public void onToggleLearning(@NotNull RandomEventsGame game) {
             game.toggleRequireLearning();
         }
+        @Subcommand("lore")
+        public void onToggleLore(@NotNull RandomEventsGame game) {
+            game.toggleLore();
+        }
+        @Subcommand("specialItems")
+        public void onToggleSpecialItems(@NotNull RandomEventsGame game) {
+            game.toggleSpecialItems();
+        }
     }
 
     @Subcommand("set")
@@ -160,6 +169,14 @@ public class RandomEventsCommands extends BaseCommand {
             } else {
                 game.setTimeTillNextEvent(time);
             }
+        }
+        @Subcommand("displayLore")
+        public void onSetDisplayLore(@NotNull RandomEventsGame game, @Name("value") boolean value) {
+            game.setDisplayLore(value);
+        }
+        @Subcommand("hasSpecialItems")
+        public void onSetHasSpecialItems(@NotNull RandomEventsGame game, @Name("value") boolean value) {
+            game.setHasSpecialItems(value);
         }
     }
 }

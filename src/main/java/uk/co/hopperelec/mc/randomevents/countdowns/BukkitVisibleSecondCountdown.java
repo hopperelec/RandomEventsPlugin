@@ -4,7 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import uk.co.hopperelec.mc.randomevents.TimeInSeconds;
+import uk.co.hopperelec.mc.randomevents.utils.TimeInSeconds;
 
 public abstract class BukkitVisibleSecondCountdown extends BukkitSecondCountdown {
     @NotNull public final static String DEFAULT_TEXT = "Next event:";

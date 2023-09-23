@@ -1,5 +1,6 @@
 package uk.co.hopperelec.mc.randomevents.eventtypes;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Damageable;
@@ -8,20 +9,32 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
 
-public class RandomItemEvent extends PolyMetricRandomEventType<Material> {
+import javax.annotation.CheckReturnValue;
+
+public class RandomItemEvent extends PositionalPolyMetricRandomEventType<Material> {
     public RandomItemEvent(@NotNull RandomEventsPlugin plugin) {
         super(plugin);
     }
 
-    @Override
-    public boolean execute(@NotNull RandomEventsPlayer player, @NotNull Material material) {
+    @CheckReturnValue
+    private @NotNull ItemStack getRandomItemStack(@NotNull Material material) {
         final ItemStack itemStack = new ItemStack(material);
         if (itemStack.getItemMeta() instanceof Damageable damageable) {
             damageable.setHealth(plugin.random.nextInt(material.getMaxDurability())+1);
         }
-        player.game.handleLoreFor(itemStack);
+        return itemStack;
+    }
+
+    @Override
+    public boolean execute(@NotNull RandomEventsPlayer player, @NotNull Material material) {
+        final ItemStack itemStack = getRandomItemStack(material);
         player.giveItem(itemStack);
         return true;
+    }
+
+    @Override
+    public void execute(@NotNull Location location, @NotNull Material material) {
+        location.getWorld().dropItemNaturally(location, getRandomItemStack(material));
     }
 
     @Override
@@ -35,7 +48,7 @@ public class RandomItemEvent extends PolyMetricRandomEventType<Material> {
     }
 
     @Override
-    protected @NotNull Material[] getAllMetrics() {
+    protected @NotNull Material[] getAllMetrics(@NotNull World world) {
         return Material.values();
     }
 

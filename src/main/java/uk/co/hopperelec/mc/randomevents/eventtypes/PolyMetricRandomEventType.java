@@ -1,12 +1,19 @@
 package uk.co.hopperelec.mc.randomevents.eventtypes;
 
+import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.jetbrains.annotations.NotNull;
+import uk.co.hopperelec.mc.randomevents.RandomEventsGame;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlayer;
 import uk.co.hopperelec.mc.randomevents.RandomEventsPlugin;
+import uk.co.hopperelec.mc.randomevents.config.RandomEventWeightPreset;
 
 import javax.annotation.CheckReturnValue;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract non-sealed class PolyMetricRandomEventType<M> extends RandomEventType {
@@ -15,6 +22,14 @@ public abstract non-sealed class PolyMetricRandomEventType<M> extends RandomEven
     }
 
     public abstract boolean execute(@NotNull RandomEventsPlayer player, M metric);
+    public short execute(@NotNull RandomEventsPlayer player, M metric, short repeats) {
+        for (short i = 0; i < repeats; i++) {
+            if (!execute(player, metric)) {
+                return i;
+            }
+        }
+        return repeats;
+    }
 
     @CheckReturnValue
     protected boolean isValidMetric(M metric) { return true; }
@@ -25,29 +40,35 @@ public abstract non-sealed class PolyMetricRandomEventType<M> extends RandomEven
         return isValidMetric(metric) && isEnabledIn(metric, world);
     }
     @CheckReturnValue
+    public boolean isValidMetric(M metric, @NotNull Location location) {
+        return isValidMetric(metric, location.getWorld());
+    }
+    @CheckReturnValue
+    public boolean isValidMetric(M metric, @NotNull Block block) {
+        return isValidMetric(metric, block.getLocation());
+    }
+    @CheckReturnValue
     public boolean isValidMetric(M metric, @NotNull RandomEventsPlayer player) {
-        return isValidMetric(metric, player.getWorld());
+        return isValidMetric(metric, player.getLocation());
     }
 
     @CheckReturnValue
-    protected abstract @NotNull M[] getAllMetrics();
-    @CheckReturnValue
-    protected @NotNull M[] getAllMetrics(@NotNull World world) { return getAllMetrics(); }
+    protected abstract @NotNull M[] getAllMetrics(@NotNull World world);
 
     @CheckReturnValue
     protected @NotNull String getMetricKey(@NotNull M metric) { return metric.toString(); }
 
     @CheckReturnValue
-    protected @NotNull Set<M> getValidMetrics(@NotNull RandomEventsPlayer player) {
-        return Arrays.stream(getAllMetrics(player.getWorld()))
-                .filter(metric -> isValidMetric(metric, player))
+    protected @NotNull Set<M> getValidMetrics(@NotNull Location location) {
+        return Arrays.stream(getAllMetrics(location.getWorld()))
+                .filter(metric -> isValidMetric(metric, location))
                 .collect(Collectors.toUnmodifiableSet());
     }
 
     @CheckReturnValue
-    public M getRandomMetricFor(@NotNull RandomEventsPlayer player) {
-        final Set<M> validMetrics = getValidMetrics(player);
-        final Map<String,Float> weightsByName = player.game.weightPreset.subEvents().get(getName());
+    public M getRandomMetricFor(@NotNull Location location, @NotNull RandomEventWeightPreset weightPreset) {
+        final Set<M> validMetrics = getValidMetrics(location);
+        final Map<String,Float> weightsByName = weightPreset.subEvents().get(getName());
         if (weightsByName == null) {
             final Iterator<M> iterator = validMetrics.iterator();
             final int randomIndex = plugin.random.nextInt(validMetrics.size()-1);
@@ -55,6 +76,22 @@ public abstract non-sealed class PolyMetricRandomEventType<M> extends RandomEven
             return iterator.next();
         }
         return plugin.chooseRandom(validMetrics, weightsByName, this::getMetricKey);
+    }
+    @CheckReturnValue
+    public M getRandomMetricFor(@NotNull Location location, @NotNull RandomEventsGame game) {
+        return getRandomMetricFor(location, game.weightPreset);
+    }
+    @CheckReturnValue
+    public M getRandomMetricFor(@NotNull Block block, @NotNull RandomEventWeightPreset weightPreset) {
+        return getRandomMetricFor(block.getLocation(), weightPreset);
+    }
+    @CheckReturnValue
+    public M getRandomMetricFor(@NotNull Block block, @NotNull RandomEventsGame game) {
+        return getRandomMetricFor(block, game.weightPreset);
+    }
+    @CheckReturnValue
+    public M getRandomMetricFor(@NotNull RandomEventsPlayer player) {
+        return getRandomMetricFor(player.getLocation(), player.game);
     }
 
     @CheckReturnValue
@@ -67,8 +104,15 @@ public abstract non-sealed class PolyMetricRandomEventType<M> extends RandomEven
                 .collect(Collectors.joining(" "));
     }
 
-    public void success(@NotNull RandomEventsPlayer player, M metric) {
-        player.sendMessage(getSuccessMessage(metric));
+    protected void success(@NotNull RandomEventsPlayer player, @NotNull String message) {
+        player.sendMessage(message);
         playSuccessSound(player);
+    }
+    public void success(@NotNull RandomEventsPlayer player, M metric) {
+        success(player, getSuccessMessage(metric));
+    }
+    public void success(@NotNull RandomEventsPlayer player, M metric, short repeats) {
+        final String message = getSuccessMessage(metric);
+        success(player, repeats > 1 ? message : message+" x"+repeats);
     }
 }

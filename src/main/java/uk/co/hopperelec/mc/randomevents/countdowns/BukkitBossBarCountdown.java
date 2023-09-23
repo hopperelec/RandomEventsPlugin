@@ -7,7 +7,7 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
-import uk.co.hopperelec.mc.randomevents.TimeInSeconds;
+import uk.co.hopperelec.mc.randomevents.utils.TimeInSeconds;
 
 public class BukkitBossBarCountdown extends BukkitVisibleSecondCountdown {
     @NotNull public final BossBar bossBar = Bukkit.createBossBar(DEFAULT_TEXT, BarColor.YELLOW, BarStyle.SOLID);

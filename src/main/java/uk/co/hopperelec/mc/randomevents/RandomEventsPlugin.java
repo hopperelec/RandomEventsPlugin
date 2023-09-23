@@ -19,34 +19,41 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDropItemEvent;
-import org.bukkit.event.block.BlockExplodeEvent;
-import org.bukkit.event.block.LeavesDecayEvent;
+import org.bukkit.event.*;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.inventory.*;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.config.RandomEventWeightPreset;
 import uk.co.hopperelec.mc.randomevents.config.RandomEventsConfig;
 import uk.co.hopperelec.mc.randomevents.config.RandomEventsGameConfig;
 import uk.co.hopperelec.mc.randomevents.eventtypes.*;
+import uk.co.hopperelec.mc.randomevents.specialitems.functionality.SpecialItemBreakBlock;
+import uk.co.hopperelec.mc.randomevents.specialitems.functionality.SpecialItemFunctionality;
+import uk.co.hopperelec.mc.randomevents.specialitems.functionality.SpecialItemRandomEvent;
+import uk.co.hopperelec.mc.randomevents.specialitems.functionality.SpecialItemSkipCountdown;
+import uk.co.hopperelec.mc.randomevents.utils.TimeInSeconds;
 
 import javax.annotation.CheckReturnValue;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE;
 import static uk.co.hopperelec.mc.randomevents.RandomEventsPlayer.getRandomEventsPlayer;
@@ -55,8 +62,10 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     private RandomEventsGame game;
     public RandomEventsConfig config;
     @NotNull public final BiMap<String,RandomEventType> registeredEventTypes = HashBiMap.create();
+    @NotNull public final BiMap<String,SpecialItemFunctionality> registeredSpecialItemFunctionalities = HashBiMap.create();
     @NotNull public final Random random = new Random();
     public final NamespacedKey ITEM_LORE_HASH_KEY = new NamespacedKey(this, "lore-hash");
+    public final NamespacedKey SPECIAL_ITEM_USES_KEY = new NamespacedKey(this, "special-uses");
 
 
     @CheckReturnValue
@@ -92,10 +101,17 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
 
     @CheckReturnValue
     public @NotNull RandomEventType chooseRandomEvent(@NotNull RandomEventWeightPreset weightPreset) {
+        return chooseRandom(registeredEventTypes.values(), weightPreset.eventTypes(), RandomEventType::getName);
+    }
+    @CheckReturnValue
+    public @NotNull PositionalRandomEventType chooseRandomPositionalEvent(@NotNull RandomEventWeightPreset weightPreset) {
         return chooseRandom(
-                new HashSet<>(registeredEventTypes.values()),
+                registeredEventTypes.values().stream()
+                        .filter(PositionalRandomEventType.class::isInstance)
+                        .map(PositionalRandomEventType.class::cast)
+                        .collect(Collectors.toSet()),
                 weightPreset.eventTypes(),
-                eventName -> registeredEventTypes.inverse().get(eventName)
+                PositionalRandomEventType::getName
         );
     }
 
@@ -162,18 +178,23 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
         manager.registerCommand(new RandomEventsCommands());
     }
 
-    private void registerDefaultEventTypes() {
+    private void registerDefaults() {
         registeredEventTypes.put("block", new RandomBlockEvent(this));
         registeredEventTypes.put("item", new RandomItemEvent(this));
         registeredEventTypes.put("entity", new RandomEntityEvent(this));
         registeredEventTypes.put("effect", new RandomEffectEvent(this));
         registeredEventTypes.put("teleport", new RandomTeleportEvent(this));
+        registeredEventTypes.put("structure_template", new RandomStructureTemplateEvent(this));
         registeredEventTypes.put("structure", new RandomStructureEvent(this));
+        registeredEventTypes.put("world_feature", new RandomWorldFeatureEvent(this));
+        registeredSpecialItemFunctionalities.put("random_event", new SpecialItemRandomEvent(this));
+        registeredSpecialItemFunctionalities.put("skip_countdown", new SpecialItemSkipCountdown(this));
+        registeredSpecialItemFunctionalities.put("break_block", new SpecialItemBreakBlock(this));
     }
 
     @Override
     public void onEnable() {
-        registerDefaultEventTypes();
+        registerDefaults();
         try {
             config = getRandomEventsConfig(getConfigFile());
         } catch (IOException e) {
@@ -319,7 +340,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
             game.removeLoreFrom(event.getInventory());
         }
     }
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler
     public void onInventoryClick(@NotNull InventoryClickEvent event) {
         // Excessive, but more readable and can be used to fix bugged items
         game.resetLoreFor(event.getCursor());
@@ -351,6 +372,111 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
                 game.addLoreTo(event.getItem());
             } else {
                 game.removeLoreFrom(event.getItem());
+            }
+        }
+    }
+
+    // Special item causes
+    @CheckReturnValue
+    public @Nullable Map<String,JsonNode> getSpecialItemFunctionalityConfig(@NotNull Material material, @NotNull String potentialCause) {
+        if (!game.isOngoing() || !game.hasSpecialItems()) return null;
+        final Map<String,JsonNode> functionalityConfig = config.specialItems().get(material);
+        if (functionalityConfig == null) return null;
+        final JsonNode requiredCause = functionalityConfig.get("cause");
+        if (requiredCause == null) throw new IllegalStateException("Special item "+material+" does not have a cause");
+        if (!requiredCause.asText().equals(potentialCause)) return null;
+        return functionalityConfig;
+    }
+    @CheckReturnValue
+    public @NotNull SpecialItemFunctionality getSpecialItemFunctionality(@NotNull Material material, @NotNull Map<String,JsonNode> functionalityConfig) {
+        final JsonNode functionalityTypeName = functionalityConfig.get("functionality");
+        if (functionalityTypeName == null) throw new IllegalStateException("Special item "+material+" does not have a functionality type");
+        final SpecialItemFunctionality functionality = registeredSpecialItemFunctionalities.get(functionalityTypeName.asText());
+        if (functionality == null) throw new IllegalArgumentException("Special item "+material+" has an invalid functionality type");
+        return functionality;
+    }
+    @CheckReturnValue
+    public boolean doSpecialItemProbability(@NotNull Map<String,JsonNode> functionalityConfig) {
+        final JsonNode probability = functionalityConfig.get("probability");
+        return probability == null || random.nextFloat() < probability.floatValue();
+    }
+
+    public boolean decrementSpecialItemUses(
+            @NotNull PersistentDataContainer persistentDataContainer,
+            @NotNull Map<String,JsonNode> functionalityConfig
+    ) {
+        final JsonNode maxUses = functionalityConfig.get("uses");
+        final short remainingUses = persistentDataContainer.getOrDefault(
+                SPECIAL_ITEM_USES_KEY,
+                PersistentDataType.SHORT,
+                maxUses == null ? 1 : maxUses.shortValue()
+        );
+        if (remainingUses < 0) return false;
+        if (remainingUses <= 1) return true;
+        persistentDataContainer.set(SPECIAL_ITEM_USES_KEY, PersistentDataType.SHORT, (short)(remainingUses-1));
+        return false;
+    }
+
+    public boolean useSpecialItemStack(@NotNull ItemStack itemStack, @NotNull Player player, @NotNull Event cause, @NotNull String causeName) {
+        final Material material = itemStack.getType();
+        final Map<String,JsonNode> functionalityConfig = getSpecialItemFunctionalityConfig(material, causeName);
+        if (functionalityConfig == null) return false;
+        if (doSpecialItemProbability(functionalityConfig)) {
+            if (!getSpecialItemFunctionality(material, functionalityConfig).execute(material, game, player, cause)) {
+                return false;
+            }
+        } else {
+            player.sendMessage("The odds weren't in your favour...");
+        }
+        final ItemMeta itemMeta = itemStack.getItemMeta();
+        if (decrementSpecialItemUses(itemMeta.getPersistentDataContainer(), functionalityConfig)) {
+            itemStack.setAmount(itemStack.getAmount()-1);
+        } else {
+            itemStack.setItemMeta(itemMeta);
+        }
+        return true;
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDropItem(@NotNull PlayerDropItemEvent event) {
+        final Material material = event.getItemDrop().getItemStack().getType();
+        final Map<String,JsonNode> functionalityConfig = getSpecialItemFunctionalityConfig(material, "drop");
+        if (functionalityConfig != null) {
+            if (doSpecialItemProbability(functionalityConfig)) {
+                if (getSpecialItemFunctionality(material, functionalityConfig).execute(material, game, event.getPlayer(), event)) {
+                    if (decrementSpecialItemUses(event.getItemDrop().getPersistentDataContainer(), functionalityConfig)) {
+                        event.getItemDrop().remove();
+                    }
+                }
+            }
+        }
+    }
+    // Could do BlockDispenseEvent, but I'm lazy and this isn't really necessary anyways
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onBlockPlace(@NotNull BlockPlaceEvent event) {
+        if (useSpecialItemStack(event.getItemInHand(), event.getPlayer(), event, "place")) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerInteract(@NotNull PlayerInteractEvent event) {
+        if (
+                event.getAction().isRightClick() &&
+                useSpecialItemStack(event.getPlayer().getInventory().getItemInMainHand(), event.getPlayer(), event, "right_click")
+        ) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTimerBlockPlace(@NotNull BlockPlaceEvent event) {
+        if (isInOngoingGame(event.getPlayer())) {
+            final Map<String, JsonNode> functionalityConfig = getSpecialItemFunctionalityConfig(event.getBlockPlaced().getType(), "block_and_timer");
+            if (functionalityConfig != null) {
+                final JsonNode maxUsesNode = functionalityConfig.get("uses");
+                game.addTimerBlock(event.getBlockPlaced(), maxUsesNode == null ? 1 : maxUsesNode.shortValue());
             }
         }
     }

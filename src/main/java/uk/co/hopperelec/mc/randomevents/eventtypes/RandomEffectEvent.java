@@ -1,6 +1,7 @@
 package uk.co.hopperelec.mc.randomevents.eventtypes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.bukkit.World;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +30,7 @@ public class RandomEffectEvent extends PolyMetricRandomEventType<PotionEffect> {
     }
 
     @Override
-    protected @NotNull PotionEffect[] getAllMetrics() {
+    protected @NotNull PotionEffect[] getAllMetrics(@NotNull World world) {
         return Arrays.stream(PotionEffectType.values()).map(this::generateBasePotionEffect).toArray(PotionEffect[]::new);
     }
 

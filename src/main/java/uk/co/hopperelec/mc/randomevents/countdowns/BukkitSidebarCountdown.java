@@ -9,7 +9,7 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.jetbrains.annotations.NotNull;
-import uk.co.hopperelec.mc.randomevents.TimeInSeconds;
+import uk.co.hopperelec.mc.randomevents.utils.TimeInSeconds;
 
 public class BukkitSidebarCountdown extends BukkitPlayerSecondCountdown {
     @NotNull public final static String internalName = "countdown";

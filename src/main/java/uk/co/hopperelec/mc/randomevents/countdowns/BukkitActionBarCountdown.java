@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import uk.co.hopperelec.mc.randomevents.TimeInSeconds;
+import uk.co.hopperelec.mc.randomevents.utils.TimeInSeconds;
 
 public class BukkitActionBarCountdown extends BukkitPlayerSecondCountdown {
     @Nullable private String extraText;

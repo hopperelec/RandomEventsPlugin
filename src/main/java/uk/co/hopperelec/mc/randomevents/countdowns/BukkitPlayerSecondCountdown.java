@@ -3,7 +3,7 @@ package uk.co.hopperelec.mc.randomevents.countdowns;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
-import uk.co.hopperelec.mc.randomevents.TimeInSeconds;
+import uk.co.hopperelec.mc.randomevents.utils.TimeInSeconds;
 
 import java.util.HashSet;
 import java.util.Set;
