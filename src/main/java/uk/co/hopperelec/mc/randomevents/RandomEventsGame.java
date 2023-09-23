@@ -216,9 +216,6 @@ public class RandomEventsGame {
     public <M> void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull PolyMetricRandomEventType<M> randomEventType, short repeats) {
         doRandomEvent(player, randomEventType, randomEventType.getRandomMetricFor(player), repeats);
     }
-    public <M> void doRandomEvent(@NotNull Block block, @NotNull PositionalPolyMetricRandomEventType<M> randomEventType, short repeats) {
-        randomEventType.execute(block, randomEventType.getRandomMetricFor(block, this), repeats);
-    }
     public <M> void doRandomEvent(@NotNull RandomEventsPlayer player, @NotNull PolyMetricRandomEventType<M> type, M metric) {
         doRandomEvent(player, type, metric, (short) 1);
     }
