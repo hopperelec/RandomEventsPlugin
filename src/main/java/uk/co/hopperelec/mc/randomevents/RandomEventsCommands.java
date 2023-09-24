@@ -24,6 +24,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("start")
     @Description("Start the game!")
+    @CommandPermission("randomevents.admin")
     public void onStart(@NotNull RandomEventsGame game, @Optional TimeInSeconds countdownLength) {
         if (countdownLength != null) game.setCountdownLength(countdownLength);
         game.start();
@@ -31,6 +32,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("stop")
     @Description("Stops an ongoing game")
+    @CommandPermission("randomevents.admin")
     public void onStop(@NotNull RandomEventsGame game, @NotNull CommandSender sender) {
         if (game.isOngoing()) {
             game.stop();
@@ -42,6 +44,7 @@ public class RandomEventsCommands extends BaseCommand {
     @Subcommand("trigger")
     @Description("Triggers an event")
     @CommandCompletion("@randomeventtypes")
+    @CommandPermission("randomevents.admin")
     public void onTrigger(@NotNull RandomEventsGame game, @Optional @Name("type") RandomEventType randomEventType) {
         if (randomEventType == null) {
             game.doRandomEvent();
@@ -53,6 +56,7 @@ public class RandomEventsCommands extends BaseCommand {
     @Subcommand("triggerplayer")
     @Description("Triggers an event on a given player")
     @CommandCompletion("@players @randomeventtypes")
+    @CommandPermission("randomevents.admin")
     public void onTriggerPlayer(@NotNull RandomEventsGame game, @Name("player") RandomEventsPlayer player, @Optional @Name("type") RandomEventType randomEventType) {
         if (randomEventType == null) {
             game.doRandomEvent(player);
@@ -106,6 +110,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("learn")
     @Description("Learn the drops of the given block or entity name to deobfuscate them in the drops list")
+    @CommandPermission("randomevents.admin")
     public void onLearn(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Optional @Name("name") String name) {
         final Object seed = getSeedFromName(game, sender, name);
         if (seed != null) {
@@ -116,6 +121,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("unlearn")
     @Description("Unlearn the drops of the given block or entity name to reobfuscate them in the drops list")
+    @CommandPermission("randomevents.admin")
     public void onUnlearn(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Optional @Name("name") String name) {
         final Object seed = getSeedFromName(game, sender, name);
         if (seed != null) {
@@ -126,12 +132,14 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("seed")
     @Description("View the seed used to generate the random block and entity drops")
+    @CommandPermission("randomevents.seed")
     public void onSeed(@NotNull RandomEventsGame game, @NotNull CommandSender sender) {
         sender.sendMessage(Long.toString(game.getLootSeed()));
     }
 
-    @Subcommand("set")
+    @Subcommand("toggle")
     @Description("Toggle boolean flags")
+    @CommandPermission("randomevents.admin")
     public class RandomEventsToggleCommands extends BaseCommand {
         @Subcommand("learning")
         public void onToggleLearning(@NotNull RandomEventsGame game) {
@@ -149,6 +157,7 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("set")
     @Description("Set configuration options for an upcoming or ongoing game")
+    @CommandPermission("randomevents.admin")
     public class RandomEventsSetCommands extends BaseCommand {
         @Subcommand("countdownLength")
         public void onSetCountdownLength(@NotNull RandomEventsGame game, @NotNull @Name("countdownLength") TimeInSeconds countdownLength) {

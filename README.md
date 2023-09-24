@@ -25,4 +25,4 @@ The following features can be configured:
 
 ---
 
-**This plugin is not yet production-ready. Commands can currently be accessed by all players regardless of permissions**
+This plugin is yet to be fully tested, and there are known exploits which could be issues depending on how the plugin is being implemented. I do not recommend using it in a production server just yet!

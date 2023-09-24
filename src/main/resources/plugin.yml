@@ -9,3 +9,10 @@ website: ${project.url}
 commands:
   randomevents:
     description: Core command for RandomEvents
+permissions:
+  randomevents.admin:
+    default: op
+    children:
+      randomevents.seed: true
+  randomevents.seed:
+    default: op
