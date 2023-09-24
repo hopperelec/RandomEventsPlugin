@@ -86,11 +86,12 @@ special_items:
     cause: place
     functionality: random_event
     event_type: structure_template
+    probability: 0.5
   JIGSAW:
     cause: place
     functionality: random_event
     event_type: structure
-    probability: 0.5
+    probability: 0.2
   STRUCTURE_VOID:
     cause: place
     functionality: break_block
@@ -429,6 +430,14 @@ weight_presets:
         FIREWORK_STAR: 0
         TIPPED_ARROW: 0 # Defaults to "uncraftable"
         KNOWLEDGE_BOOK: 0 # Could be a special item in future
+
+        # Special items
+        COMMAND_BLOCK: 0.2
+        CHAIN_COMMAND_BLOCK: 0.2
+        REPEATING_COMMAND_BLOCK: 0.2
+        STRUCTURE_BLOCK: 0.2
+        JIGSAW: 0.2
+        STRUCTURE_VOID: 1
 
         # Cosmetic items
         DISC_FRAGMENT_5: 0.125
