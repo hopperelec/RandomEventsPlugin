@@ -129,9 +129,17 @@ weight_presets:
       block:
         VOID_AIR: 0
         CAVE_AIR: 0
-        STRUCTURE_VOID: 0
         WALL_TORCH: 0
         REDSTONE_WALL_TORCH: 0
+        LAVA: 5
+
+        # Special items (not useful when placed as blocks)
+        COMMAND_BLOCK: 0
+        CHAIN_COMMAND_BLOCK: 0
+        REPEATING_COMMAND_BLOCK: 0
+        STRUCTURE_BLOCK: 0
+        JIGSAW: 0
+        STRUCTURE_VOID: 0
 
         # Dyed blocks
         ORANGE_WOOL: 0.25
@@ -391,14 +399,36 @@ weight_presets:
         WAXED_OXIDIZED_CUT_COPPER_SLAB: 0.125
         WAXED_OXIDIZED_CUT_COPPER_STAIRS: 0.125
 
+        # Pottery sherds
+        ANGLER_POTTERY_SHERD: 0.1
+        ARCHER_POTTERY_SHERD: 0.1
+        ARMS_UP_POTTERY_SHERD: 0.1
+        BLADE_POTTERY_SHERD: 0.1
+        BREWER_POTTERY_SHERD: 0.1
+        BURN_POTTERY_SHERD: 0.1
+        DANGER_POTTERY_SHERD: 0.1
+        EXPLORER_POTTERY_SHERD: 0.1
+        FRIEND_POTTERY_SHERD: 0.1
+        HEART_POTTERY_SHERD: 0.1
+        HEARTBREAK_POTTERY_SHERD: 0.1
+        HOWL_POTTERY_SHERD: 0.1
+        MINER_POTTERY_SHERD: 0.1
+        MOURNER_POTTERY_SHERD: 0.1
+        PLENTY_POTTERY_SHERD: 0.1
+        PRIZE_POTTERY_SHERD: 0.1
+        SHEAF_POTTERY_SHERD: 0.1
+        SHELTER_POTTERY_SHERD: 0.1
+        SKULL_POTTERY_SHERD: 0.1
+        SNORT_POTTERY_SHERD: 0.1
+
       item:
         # Completely useless
         AIR: 0
-        STRUCTURE_VOID: 0
         FILLED_MAP: 0
         FIREWORK_ROCKET: 0
         FIREWORK_STAR: 0
         TIPPED_ARROW: 0 # Defaults to "uncraftable"
+        KNOWLEDGE_BOOK: 0 # Could be a special item in future
 
         # Cosmetic items
         DISC_FRAGMENT_5: 0.125
@@ -468,6 +498,28 @@ weight_presets:
         WAXED_OXIDIZED_CUT_COPPER: 0.125
         WAXED_OXIDIZED_CUT_COPPER_SLAB: 0.125
         WAXED_OXIDIZED_CUT_COPPER_STAIRS: 0.125
+
+        # Pottery sherds
+        ANGLER_POTTERY_SHERD: 0.1
+        ARCHER_POTTERY_SHERD: 0.1
+        ARMS_UP_POTTERY_SHERD: 0.1
+        BLADE_POTTERY_SHERD: 0.1
+        BREWER_POTTERY_SHERD: 0.1
+        BURN_POTTERY_SHERD: 0.1
+        DANGER_POTTERY_SHERD: 0.1
+        EXPLORER_POTTERY_SHERD: 0.1
+        FRIEND_POTTERY_SHERD: 0.1
+        HEART_POTTERY_SHERD: 0.1
+        HEARTBREAK_POTTERY_SHERD: 0.1
+        HOWL_POTTERY_SHERD: 0.1
+        MINER_POTTERY_SHERD: 0.1
+        MOURNER_POTTERY_SHERD: 0.1
+        PLENTY_POTTERY_SHERD: 0.1
+        PRIZE_POTTERY_SHERD: 0.1
+        SHEAF_POTTERY_SHERD: 0.1
+        SHELTER_POTTERY_SHERD: 0.1
+        SKULL_POTTERY_SHERD: 0.1
+        SNORT_POTTERY_SHERD: 0.1
 
         # Dyed blocks
         ORANGE_WOOL: 0.25
