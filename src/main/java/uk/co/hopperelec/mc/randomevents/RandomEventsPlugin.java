@@ -320,7 +320,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     public void onEntityDeath(@NotNull EntityDeathEvent event) {
         if (game.isOngoing()) {
             event.getDrops().clear();
-            event.getDrops().addAll(game.getNewDropsFor(event.getEntity()));
+            event.getDrops().addAll(game.getNewDropsFor(event.getEntity().getType()));
             if (event.getEntity() instanceof InventoryHolder inventoryHolder) {
                 addFromInventory(event.getDrops(), inventoryHolder);
             }
