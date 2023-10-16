@@ -3,17 +3,12 @@ package uk.co.hopperelec.mc.randomevents;
 import com.fasterxml.jackson.databind.JsonNode;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SpawnEggMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.hopperelec.mc.randomevents.config.RandomEventScope;
@@ -40,7 +35,6 @@ public class RandomEventsGame {
     @NotNull private final Map<Block,Short> timerBlocks = new HashMap<>();
     @NotNull private final Set<RandomEventsPlayer> players = new HashSet<>();
     @NotNull private final Set<Object> learnedDropSeeds = new HashSet<>();
-    @NotNull private final Map<Object,Set<ItemStack>> itemsWithLore = new HashMap<>();
 
     public RandomEventsGame(@NotNull RandomEventsPlugin plugin, @NotNull RandomEventsGameConfig config) {
         if (config.lootSeed == -1) config.lootSeed = new Random().nextLong();
@@ -58,7 +52,6 @@ public class RandomEventsGame {
     public void start() {
         resetCountdown();
         countdown.start();
-        resetLore();
     }
 
     public void resetCountdown() {
@@ -73,7 +66,6 @@ public class RandomEventsGame {
             throw new IllegalStateException("Tried to stop a game which isn't ongoing");
         }
         countdown.pause();
-        removeLoreFromPlayers();
         clearPotionEffects();
     }
 
@@ -250,15 +242,15 @@ public class RandomEventsGame {
 
     @CheckReturnValue
     public @NotNull Component getDropsTextForItems(@NotNull List<ItemStack> newDroppedItems) {
-        Component loreToAdd = LORE_PREFIX.append(Component.translatable(newDroppedItems.remove(0).translationKey(), BLUE).decoration(BOLD, false));
+        Component component = LORE_PREFIX.append(Component.translatable(newDroppedItems.remove(0).translationKey(), BLUE).decoration(BOLD, false));
         for (ItemStack newDroppedItem : newDroppedItems) {
-            loreToAdd = loreToAdd.append(Component.text(", ", DARK_GRAY));
-            loreToAdd = loreToAdd.append(Component.translatable(newDroppedItem.translationKey(), BLUE));
+            component = component.append(Component.text(", ", DARK_GRAY));
+            component = component.append(Component.translatable(newDroppedItem.translationKey(), BLUE));
             if (newDroppedItem.getAmount() != 1) {
-                loreToAdd = loreToAdd.append(Component.text(newDroppedItem.getAmount(), WHITE));
+                component = component.append(Component.text(newDroppedItem.getAmount(), WHITE));
             }
         }
-        return loreToAdd;
+        return component;
     }
     @CheckReturnValue
     public @NotNull Component getDropsTextFor(@NotNull Object seed) {
@@ -280,117 +272,6 @@ public class RandomEventsGame {
         return null;
     }
 
-    @CheckReturnValue
-    public boolean hasLore(@Nullable ItemStack itemStack) {
-        if (itemStack == null) return false;
-        final ItemMeta itemMeta = itemStack.getItemMeta();
-        if (itemMeta == null) return false;
-        return itemMeta.getPersistentDataContainer().has(plugin.ITEM_LORE_HASH_KEY);
-    }
-
-    public void addLoreTo(@Nullable ItemStack itemStack) {
-        if (itemStack == null || hasLore(itemStack)) return;
-        final Object seed = getSeedFor(itemStack);
-        if (seed == null) return;
-        final Component loreToAdd = getDropsTextFor(seed);
-
-        final List<Component> currentLore = itemStack.lore();
-        if (currentLore == null) {
-            itemStack.lore(List.of(loreToAdd));
-        } else {
-            currentLore.add(loreToAdd);
-            itemStack.lore(currentLore);
-        }
-
-        final ItemMeta itemMeta = itemStack.hasItemMeta() ? itemStack.getItemMeta() : Bukkit.getItemFactory().getItemMeta(itemStack.getType());
-        itemMeta.getPersistentDataContainer().set(plugin.ITEM_LORE_HASH_KEY, PersistentDataType.INTEGER, loreToAdd.hashCode());
-        itemStack.setItemMeta(itemMeta);
-
-        itemsWithLore.putIfAbsent(seed, new HashSet<>());
-        itemsWithLore.get(seed).add(itemStack);
-    }
-    public void addLoreTo(@NotNull Inventory inventory) {
-        for (ItemStack itemStack : inventory.getContents()) {
-            addLoreTo(itemStack);
-        }
-    }
-    public void addLoreTo(@NotNull InventoryHolder inventoryHolder) {
-        addLoreTo(inventoryHolder.getInventory());
-    }
-    public void addLoreToPlayers() {
-        for (RandomEventsPlayer player : players) {
-            addLoreTo(player);
-        }
-    }
-
-    public void removeLoreFrom(@Nullable ItemStack itemStack) {
-        if (itemStack == null) return;
-        final ItemMeta itemMeta = itemStack.getItemMeta();
-        if (itemMeta == null) return;
-        final Integer loreHash = itemMeta.getPersistentDataContainer().get(plugin.ITEM_LORE_HASH_KEY, PersistentDataType.INTEGER);
-        if (loreHash != null) {
-            final List<Component> lore = itemMeta.lore();
-            if (lore != null) {
-                if (lore.size() > 1) {
-                    lore.removeIf(component -> component.hashCode() == loreHash);
-                    itemMeta.lore(lore);
-                } else {
-                    itemMeta.lore(null);
-                }
-            }
-            itemMeta.getPersistentDataContainer().remove(plugin.ITEM_LORE_HASH_KEY);
-            itemStack.setItemMeta(itemMeta);
-        }
-        for (Set<ItemStack> items : itemsWithLore.values()) {
-            items.remove(itemStack);
-        }
-    }
-    public void removeLoreFrom(@NotNull Inventory inventory) {
-        for (ItemStack itemStack : inventory.getContents()) {
-            removeLoreFrom(itemStack);
-        }
-    }
-    public void removeLoreFrom(@NotNull InventoryHolder inventoryHolder) {
-        removeLoreFrom(inventoryHolder.getInventory());
-    }
-    public void removeLoreFromPlayers() {
-        for (RandomEventsPlayer player : players) {
-            removeLoreFrom(player);
-        }
-    }
-
-    public void handleLoreFor(@Nullable ItemStack itemStack) {
-        if (itemStack != null) {
-            if (currentlyDisplayingLore()) {
-                addLoreTo(itemStack);
-            } else {
-                removeLoreFrom(itemStack);
-            }
-        }
-    }
-    public void handleLoreFor(@NotNull Inventory inventory) {
-        if (currentlyDisplayingLore()) {
-            addLoreTo(inventory);
-        } else {
-            removeLoreFrom(inventory);
-        }
-    }
-    public void handleLoreFor(@NotNull InventoryHolder inventoryHolder) {
-        handleLoreFor(inventoryHolder.getInventory());
-    }
-
-    public void resetLoreFor(@Nullable ItemStack itemStack) {
-        removeLoreFrom(itemStack);
-        if (currentlyDisplayingLore()) addLoreTo(itemStack);
-    }
-    public void resetLore() {
-        for (Set<ItemStack> items : itemsWithLore.values()) {
-            for (ItemStack itemStack : items) {
-                resetLoreFor(itemStack);
-            }
-        }
-    }
-
 
     @CheckReturnValue
     public boolean isLearned(@NotNull Object seed) {
@@ -404,33 +285,11 @@ public class RandomEventsGame {
                     player.playSound(plugin.config.learnDropSoundEffect());
                 }
             }
-            if (itemsWithLore.containsKey(seed)) {
-                for (ItemStack itemStack : itemsWithLore.get(seed)) {
-                    resetLoreFor(itemStack);
-                }
-            }
         }
     }
 
     public void unlearn(@NotNull Object seed) {
-        if (learnedDropSeeds.remove(seed) && itemsWithLore.containsKey(seed)) {
-            for (ItemStack itemStack : itemsWithLore.get(seed)) {
-                resetLoreFor(itemStack);
-            }
-        }
-    }
-
-    @CheckReturnValue
-    public boolean doesRequireLearning() {
-        return config.requireLearning;
-    }
-    public void setRequireLearning(boolean requireLearning) {
-        if (config.requireLearning == requireLearning) return;
-        toggleRequireLearning();
-    }
-    public void toggleRequireLearning() {
-        config.requireLearning = !config.requireLearning;
-        if (currentlyDisplayingLore()) resetLore();
+       learnedDropSeeds.remove(seed);
     }
 
 
@@ -453,7 +312,6 @@ public class RandomEventsGame {
             visibleCountdown.addPlayer(player);
         }
         players.add(getRandomEventsPlayer(player, this));
-        handleLoreFor(player);
     }
 
     public void removePlayer(@NotNull Player player) {
@@ -461,7 +319,6 @@ public class RandomEventsGame {
             visibleCountdown.removePlayer(player);
         }
         players.remove(getRandomEventsPlayer(player, this));
-        removeLoreFrom(player);
     }
 
     public void clearPotionEffects() {
@@ -495,26 +352,6 @@ public class RandomEventsGame {
     public void setLootSeed(long seed) {
         config.lootSeed = seed;
         // resetLore();
-    }
-
-    @CheckReturnValue
-    public boolean doesDisplayLore() {
-        return config.displayLore;
-    }
-    public void setDisplayLore(boolean displayLore) {
-        if (config.displayLore == displayLore) return;
-        config.displayLore = displayLore;
-        if (isOngoing()) {
-            if (displayLore) addLoreToPlayers();
-            else removeLoreFromPlayers();
-        }
-    }
-    public void toggleLore() {
-        setDisplayLore(!config.displayLore);
-    }
-    @CheckReturnValue
-    public boolean currentlyDisplayingLore() {
-        return doesDisplayLore() && isOngoing();
     }
 
     @CheckReturnValue

@@ -37,8 +37,6 @@ learn_drop_sound_effect:
 defaults:
   countdown_length: 30 # Number of seconds between events
   loot_seed: -1 # Seed used for block and entity drops, -1 for random
-  display_lore: true # Whether to add lore to blocks and spawn eggs to display drops
-  require_learning: true # Whether players must first learn the drops of a block or entity before they are displayed in the lore
   share_scope: none # How much of an event is shared between all players in a game; one of: none/event_type/all
   weight_preset: default
   enable_special_items: true

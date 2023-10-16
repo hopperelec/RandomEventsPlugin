@@ -14,5 +14,16 @@ permissions:
     default: op
     children:
       randomevents.seed: true
+      randomevents.viewdrops.bypasslearning: true
   randomevents.seed:
     default: op
+    description: Whether this player can view the loot seed for a game they're in (this would theoretically allow them to bypass learning)
+  randomevents.viewdrops:
+    default: true
+    description: Whether this player can use `/randomevents listdrops` to view the drops of an item (by default only if they have learned the drops already)
+  randomevents.viewdrops.bypasslearning:
+    default: true
+    description: Allows this player to use `/randomevents listdrops` to view the drops of an item without needing to learn the drops first
+    children:
+      randomevents.viewdrops: true
+      randomevents.seed: true

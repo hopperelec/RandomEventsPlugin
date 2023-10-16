@@ -97,10 +97,11 @@ public class RandomEventsCommands extends BaseCommand {
 
     @Subcommand("listdrops")
     @Description("Lists the drops of the block or entity name given or in your hand")
+    @CommandPermission("randomevents.viewdrops")
     public void onListDrops(@NotNull RandomEventsGame game, @NotNull CommandSender sender, @Optional @Name("name") String name) {
         final Object seed = getSeedFromName(game, sender, name);
         if (seed != null) {
-            if (game.isLearned(seed) || !game.doesRequireLearning()) {
+            if (game.isLearned(seed) || sender.hasPermission("randomevents.viewdrops.bypasslearning")) {
                 sender.sendMessage(game.getDropsTextFor(seed));
             } else {
                 sender.sendMessage("You have not learned the drops of this item yet");
@@ -141,14 +142,6 @@ public class RandomEventsCommands extends BaseCommand {
     @Description("Toggle boolean flags")
     @CommandPermission("randomevents.admin")
     public class RandomEventsToggleCommands extends BaseCommand {
-        @Subcommand("learning")
-        public void onToggleLearning(@NotNull RandomEventsGame game) {
-            game.toggleRequireLearning();
-        }
-        @Subcommand("lore")
-        public void onToggleLore(@NotNull RandomEventsGame game) {
-            game.toggleLore();
-        }
         @Subcommand("specialItems")
         public void onToggleSpecialItems(@NotNull RandomEventsGame game) {
             game.toggleSpecialItems();
@@ -163,10 +156,6 @@ public class RandomEventsCommands extends BaseCommand {
         public void onSetCountdownLength(@NotNull RandomEventsGame game, @NotNull @Name("countdownLength") TimeInSeconds countdownLength) {
             game.setCountdownLength(countdownLength);
         }
-        @Subcommand("learning")
-        public void onSetLearning(@NotNull RandomEventsGame game, @Name("value") boolean value) {
-            game.setRequireLearning(value);
-        }
         @Subcommand("seed")
         public void onSetSeed(@NotNull RandomEventsGame game, @Name("seed") long seed) {
             game.setLootSeed(seed);
@@ -178,10 +167,6 @@ public class RandomEventsCommands extends BaseCommand {
             } else {
                 game.setTimeTillNextEvent(time);
             }
-        }
-        @Subcommand("displayLore")
-        public void onSetDisplayLore(@NotNull RandomEventsGame game, @Name("value") boolean value) {
-            game.setDisplayLore(value);
         }
         @Subcommand("hasSpecialItems")
         public void onSetHasSpecialItems(@NotNull RandomEventsGame game, @Name("value") boolean value) {

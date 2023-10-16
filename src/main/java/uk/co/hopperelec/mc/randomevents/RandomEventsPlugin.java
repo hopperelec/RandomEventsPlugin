@@ -19,13 +19,13 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.event.*;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityPickupItemEvent;
-import org.bukkit.event.entity.ItemSpawnEvent;
-import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -64,7 +64,6 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
     @NotNull public final BiMap<String,RandomEventType> registeredEventTypes = HashBiMap.create();
     @NotNull public final BiMap<String,SpecialItemFunctionality> registeredSpecialItemFunctionalities = HashBiMap.create();
     @NotNull public final Random random = new Random();
-    public final NamespacedKey ITEM_LORE_HASH_KEY = new NamespacedKey(this, "lore-hash");
     public final NamespacedKey SPECIAL_ITEM_USES_KEY = new NamespacedKey(this, "special-uses");
 
 
@@ -205,11 +204,6 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
         registerCommands();
     }
 
-    @Override
-    public void onDisable() {
-        game.removeLoreFromPlayers();
-    }
-
 
     @EventHandler
     public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
@@ -328,54 +322,6 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
         }
     }
 
-
-    // Item lore maintenance
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onInventoryOpen(@NotNull InventoryOpenEvent event) {
-        game.handleLoreFor(event.getInventory());
-    }
-    @EventHandler
-    public void onInventoryClose(@NotNull InventoryCloseEvent event) {
-        if (event.getInventory().getViewers().stream().noneMatch(this::isInOngoingGame)) {
-            game.removeLoreFrom(event.getInventory());
-        }
-    }
-    @EventHandler
-    public void onInventoryClick(@NotNull InventoryClickEvent event) {
-        // Excessive, but more readable and can be used to fix bugged items
-        game.resetLoreFor(event.getCursor());
-    }
-    @EventHandler
-    public void onPrepareItemCraft(@NotNull PrepareItemCraftEvent event) {
-        if (isInOngoingGame(event.getView().getPlayer())) {
-            game.addLoreTo(event.getInventory().getResult());
-        }
-    }
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onItemSpawn(@NotNull ItemSpawnEvent event) {
-        if (game.isOngoing()) {
-            game.removeLoreFrom(event.getEntity().getItemStack());
-        }
-    }
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onEntityPickupItem(@NotNull EntityPickupItemEvent event) {
-        if (event.getEntity() instanceof Player) {
-            game.handleLoreFor(event.getItem().getItemStack());
-        }
-    }
-    @EventHandler
-    public void onInventoryMoveItem(@NotNull InventoryMoveItemEvent event) {
-        if (game.isOngoing()) {
-            // For some reason, lore not only added/removed to/from item moved, but also entire stack it originated from
-            // I don't believe this can lead to any remnants, though, so it's only a minor visual issue
-            if (event.getDestination().getViewers().stream().anyMatch(this::isInOngoingGame)) {
-                game.addLoreTo(event.getItem());
-            } else {
-                game.removeLoreFrom(event.getItem());
-            }
-        }
-    }
-
     // Special item causes
     @CheckReturnValue
     public @Nullable Map<String,JsonNode> getSpecialItemFunctionalityConfig(@NotNull Material material, @NotNull String potentialCause) {
@@ -451,7 +397,7 @@ public class RandomEventsPlugin extends JavaPlugin implements Listener {
             }
         }
     }
-    // Could do BlockDispenseEvent, but I'm lazy and this isn't really necessary anyways
+    // Could do BlockDispenseEvent, but I'm lazy and this isn't really necessary anyway
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBlockPlace(@NotNull BlockPlaceEvent event) {

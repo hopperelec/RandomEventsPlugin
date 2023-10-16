@@ -19,7 +19,7 @@ The following features can be configured:
 - Teleport search radius
 - Countdown location
 - Sound effects
-- Default game options (including seed, lore and share scope)
+- Default game options (including countdown length, loot seed, share scope and weight preset)
 - Special items
 - Weight presets
 
