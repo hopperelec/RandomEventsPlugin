@@ -398,36 +398,19 @@ weight_presets:
         WAXED_OXIDIZED_CUT_COPPER_SLAB: 0.125
         WAXED_OXIDIZED_CUT_COPPER_STAIRS: 0.125
 
-        # Pottery sherds
-        ANGLER_POTTERY_SHERD: 0.1
-        ARCHER_POTTERY_SHERD: 0.1
-        ARMS_UP_POTTERY_SHERD: 0.1
-        BLADE_POTTERY_SHERD: 0.1
-        BREWER_POTTERY_SHERD: 0.1
-        BURN_POTTERY_SHERD: 0.1
-        DANGER_POTTERY_SHERD: 0.1
-        EXPLORER_POTTERY_SHERD: 0.1
-        FRIEND_POTTERY_SHERD: 0.1
-        HEART_POTTERY_SHERD: 0.1
-        HEARTBREAK_POTTERY_SHERD: 0.1
-        HOWL_POTTERY_SHERD: 0.1
-        MINER_POTTERY_SHERD: 0.1
-        MOURNER_POTTERY_SHERD: 0.1
-        PLENTY_POTTERY_SHERD: 0.1
-        PRIZE_POTTERY_SHERD: 0.1
-        SHEAF_POTTERY_SHERD: 0.1
-        SHELTER_POTTERY_SHERD: 0.1
-        SKULL_POTTERY_SHERD: 0.1
-        SNORT_POTTERY_SHERD: 0.1
-
       item:
         # Completely useless
         AIR: 0
         FILLED_MAP: 0
         FIREWORK_ROCKET: 0
         FIREWORK_STAR: 0
-        TIPPED_ARROW: 0 # Defaults to "uncraftable"
         KNOWLEDGE_BOOK: 0 # Could be a special item in future
+
+        # Default to "uncraftable"
+        TIPPED_ARROW: 0
+        POTION: 0
+        SPLASH_POTION: 0
+        LINGERING_POTION: 0
 
         # Special items
         COMMAND_BLOCK: 0.2
@@ -740,6 +723,28 @@ weight_presets:
         GREEN_BANNER: 0.25
         RED_BANNER: 0.25
         BLACK_BANNER: 0.25
+
+        # Pottery sherds
+        ANGLER_POTTERY_SHERD: 0.1
+        ARCHER_POTTERY_SHERD: 0.1
+        ARMS_UP_POTTERY_SHERD: 0.1
+        BLADE_POTTERY_SHERD: 0.1
+        BREWER_POTTERY_SHERD: 0.1
+        BURN_POTTERY_SHERD: 0.1
+        DANGER_POTTERY_SHERD: 0.1
+        EXPLORER_POTTERY_SHERD: 0.1
+        FRIEND_POTTERY_SHERD: 0.1
+        HEART_POTTERY_SHERD: 0.1
+        HEARTBREAK_POTTERY_SHERD: 0.1
+        HOWL_POTTERY_SHERD: 0.1
+        MINER_POTTERY_SHERD: 0.1
+        MOURNER_POTTERY_SHERD: 0.1
+        PLENTY_POTTERY_SHERD: 0.1
+        PRIZE_POTTERY_SHERD: 0.1
+        SHEAF_POTTERY_SHERD: 0.1
+        SHELTER_POTTERY_SHERD: 0.1
+        SKULL_POTTERY_SHERD: 0.1
+        SNORT_POTTERY_SHERD: 0.1
 
       entity:
         # Invisible or completely useless
