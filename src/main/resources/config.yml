@@ -770,8 +770,9 @@ weight_presets:
         PRIMED_TNT: 0.3
 
         # Boss or particularly disruptive mobs
-        VEX: 0.5
         BLAZE: 0.5
+        VEX: 0.5
+        EVOKER: 0.3
         RAVAGER: 0.3
         ELDER_GUARDIAN: 0.3
         ENDER_DRAGON: 0.2 # Has no AI so doesn't actually damage, but destroys blocks and takes time to kill
